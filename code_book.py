@@ -1,14 +1,15 @@
 import math
+
 import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from numpy import random
-from matplotlib import pyplot as plt
 # from scipy.cluster.vq import kmeans
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
 from sklearn.cluster import KMeans
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-
+import collections
 
 class CodeBook:
     def __init__(self, imageContexts):
@@ -38,13 +39,21 @@ class CodeBook:
         # self._codebook = codebook
         self._kmeans = KMeans(n_clusters=self._k).fit(features)
 
-    def quantize(self, imageContexts):
-        for imageContext in imageContexts:
+    def __quantize(self, imageContext):
             # todo try to run pca on descriptors before codebooking
             # todo whitening descriptors multiple times
             # todo optimize - memory is not freed in image context and all sub calculations are kept
             # imageContext.quantizedDescriptors = vq(whiten(imageContext.descriptors), self._codebook, False)
             imageContext.quantizedDescriptors = self._kmeans.predict(imageContext.descriptors)
+
+    def computeCodeVector(self, imageContexts):
+        for imageContext in imageContexts:
+            self.__quantize(imageContext)
+            counter = collections.Counter(imageContext.quantizedDescriptors)
+            imageContext.codeVector = np.zeros(self._kmeans.labels_.shape)
+            for code in counter.keys():
+                imageContext.codeVector[code] = counter[code]
+
 
 
     def printExampleCodes(self, imageContexts, labelsCount, samplePerLabel):

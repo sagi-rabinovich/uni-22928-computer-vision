@@ -6,7 +6,7 @@ class KeyPointExtractor:
     _useGrid = True
     _useSift = True
 
-    _gridKeyPointSizeRange = range(5,16,2)
+    _gridKeyPointSizeRange = range(5, 5, 0)
     _gridCellInterval = 2
 
     def __init__(self):
