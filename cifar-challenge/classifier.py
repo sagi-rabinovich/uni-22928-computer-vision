@@ -10,11 +10,9 @@ class Classifier:
                       [imageContext.label for imageContext in imageContexts])
         return self
 
-    def predict(self, imageContext):
-        self._svm.predict(imageContext.codeVector)
-        return self
+    def predict(self, imageContexts):
+        return self._svm.predict([imageContext.codeVector for imageContext in imageContexts])
 
-    def score(self, imageContexts):
-        self._svm.score([imageContext.codeVector for imageContext in imageContexts],
-                        [imageContext.label for imageContext in imageContexts])
-        return self
+    def score(self, testImageContexts):
+        return self._svm.score([imageContext.codeVector for imageContext in testImageContexts],
+                               [imageContext.label for imageContext in testImageContexts])
