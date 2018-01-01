@@ -9,7 +9,7 @@ from numpy import random
 # from scipy.cluster.vq import kmeans
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
-from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
 
 
 class CodeBook:
@@ -33,11 +33,11 @@ class CodeBook:
         if len(imageContexts) <= 0:
             raise Exception('Empty argument imageContexts')
 
-        self._k = len(imageContexts[0].descriptors) / 2
+        features = [imageContext.features for imageContext in imageContexts]
 
-        d = imageContexts[0].descriptors.shape
-
-        features = [imageContext.descriptors for imageContext in imageContexts]
+        labelCount = 10
+        # self._k = int(math.ceil(labelCount * np.average([len(featuresForImage) for featuresForImage in features])))
+        self._k = 100
         # todo handle cases where there are photos without features?
         features = np.concatenate(features)  # flat map
 
@@ -45,45 +45,45 @@ class CodeBook:
         # whitened = whiten(features)
         # codebook, distortion = kmeans(whitened, k)
         # self._codebook = codebook
-        self._kmeans = KMeans(n_clusters=self._k).fit(features)
+        print('computing kmeans for features' + str(features.shape))
+        self._kmeans = MiniBatchKMeans(n_clusters=self._k, verbose=1).fit(features)
 
     def computeCodeVector(self, imageContexts):
         def __computeCodeVector(imageContext):
-            # todo try to run pca on descriptors before codebooking
-            # todo whitening descriptors multiple times
+            # todo try to run pca on features before codebooking
+            # todo whitening features multiple times
             # todo optimize - memory is not freed in image context and all sub calculations are kept
-            # imageContext.quantizedDescriptors = vq(whiten(imageContext.descriptors), self._codebook, False)
-            imageContext.quantizedDescriptors = self._kmeans.predict(imageContext.descriptors)
+            # imageContext.quantized_descriptors = vq(whiten(imageContext.features), self._codebook, False)
+            imageContext.quantizedDescriptors = self._kmeans.predict(imageContext.features)
             counter = collections.Counter(imageContext.quantizedDescriptors)
-            imageContext.codeVector = np.zeros(self._kmeans.labels_.shape)
+            imageContext.codeVector = np.zeros(self._k, dtype=float)
             for code in counter.keys():
                 imageContext.codeVector[code] = counter[code]
 
         self._progressBar.forEach(imageContexts, __computeCodeVector)
 
-
-    def printExampleCodes(self, imageContexts, labelsCount, samplePerLabel):
-        labels = np.random.choice(range(self._k), labelsCount)
+    def printExampleCodes(self, imageContexts, sampleCodesCount, samplesImagesPerCode):
+        codes = np.random.choice(range(self._k), sampleCodesCount)
 
         plt.ioff()
-        figure = Figure()
+        figure = Figure(figsize=(10, 10))
         canvas = FigureCanvas(figure)
 
         originals = [imageContext.original for imageContext in imageContexts]
-        repeats = [len(imageContext.descriptors) for imageContext in imageContexts]
+        repeats = [len(imageContext.features) for imageContext in imageContexts]
         images = np.repeat(originals, repeats, axis=0)
         keyPoints = np.concatenate([imageContext.keyPoints for imageContext in imageContexts])
         quantizedDescriptors = np.concatenate([imageContext.quantizedDescriptors for imageContext in imageContexts])
 
         # codes
-        for row in range(labelsCount):
-            label = labels[row]
-            b = quantizedDescriptors == label
-            clusteredKeyPoints = keyPoints[b]
-            samples = np.random.choice(range(len(clusteredKeyPoints)), samplePerLabel)
-            sampleKeyPoints = clusteredKeyPoints[samples]
+        for row in range(sampleCodesCount):
+            code = codes[row]
+            b = quantizedDescriptors == code
+            clusteredFeatures = keyPoints[b]
+            samples = np.random.choice(range(len(clusteredFeatures)), samplesImagesPerCode)
+            sampleKeyPoints = clusteredFeatures[samples]
             sampleImages = images[b][samples]
-            for column in range(min(len(samples), samplePerLabel)):
+            for column in range(min(len(samples), samplesImagesPerCode)):
                 sampleImage = sampleImages[column]
                 sampleKp = sampleKeyPoints[column]
                 radius = int(math.ceil(sampleKp.size / 2.0))
@@ -91,10 +91,9 @@ class CodeBook:
                 y = int(sampleKp.pt[1])
                 kpImage = sampleImage[max(x - radius, 0):min(x + radius, sampleImage.shape[0]),
                           max(y - radius, 0):min(y + radius, sampleImage.shape[1])]
-                figIndex = row * samplePerLabel + column + 1
-                ax = figure.add_subplot(labelsCount, samplePerLabel, figIndex)
+                figIndex = row * samplesImagesPerCode + column + 1
+                ax = figure.add_subplot(sampleCodesCount, samplesImagesPerCode, figIndex)
                 ax.set_axis_off()
-                ax.imshow(kpImage)
+                ax.imshow(kpImage, interpolation='nearest')
 
-        figure.tight_layout()
-        canvas.print_figure('foo.png')
+        canvas.print_figure('results/example_codes.png')

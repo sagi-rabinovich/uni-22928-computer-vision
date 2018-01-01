@@ -1,40 +1,31 @@
 import cv2
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_template import FigureCanvas
+from matplotlib.figure import Figure
 
+from dense_detector import DenseDetector
 from image_dataset import ImageDataset
 from progress_bar import ProgressBar
 
 progressBar = ProgressBar()
 imageDataset = ImageDataset()
 
-nimages = 10
-imgs = imageDataset.load_training_data(nimages)[:nimages]
+nimages = 20
+imgs = imageDataset.load_training_data(nimages)
 
-surf = cv2.xfeatures2d.SURF_create()
-sift = cv2.xfeatures2d.SIFT_create()
-kaze = cv2.AKAZE_create()
 detectors = [
-    ('surf', cv2.xfeatures2d.SURF_create()),
-    ('sift', cv2.xfeatures2d.SIFT_create()),
-    ('kaze', cv2.AKAZE_create())
-continue
-here and add
-more
-detectors
-
+    ('Surf', cv2.xfeatures2d.SURF_create()),
+    ('Sift', cv2.xfeatures2d.SIFT_create()),
+    ('MSER', cv2.MSER_create()),
+    ('ORB', cv2.ORB_create()),
+    ('Kaze', cv2.KAZE_create()),
+    ('AKaze', cv2.AKAZE_create()),
+    ('Dense', DenseDetector([6]))
 ]
+
 plt.ioff()
 figure = Figure(figsize=(10, 10))
 canvas = FigureCanvas(figure)
-
-i = 0
-for im in imgs:
-    sift_kp = sift.detect(im.gray, None)
-surf_kp = surf.detect(im.gray, None)
-kaze_kp = kaze.detect(im.gray, None)
-resized_im_gray = im.gray  # cv2.resize(im.gray, (128, 128), interpolation=cv2.INTER_CUBIC)
-resized_im_original = im.original  # cv2.resize(im.original, (128, 128), interpolation=cv2.INTER_CUBIC)
-
-# def scaleKeyPoints(kps, scale):
 
 
 def drawKeyPoints(original, gray, kp):
@@ -43,31 +34,31 @@ def drawKeyPoints(original, gray, kp):
     return outImg
 
 
-sift_im = drawKeyPoints(im.original, im.gray, sift_kp)
-surf_im = drawKeyPoints(im.original, im.gray, surf_kp)
-kaze_im = drawKeyPoints(im.original, im.gray, kaze_kp)
+cols = len(detectors) + 2
+for im_i in range(len(imgs)):
+    im = imgs[im_i]
 
-detectors = 3
-cols = detectors + 2
-ax = figure.add_subplot(nimages, cols, (i * cols) + 1)
-ax.set_axis_off()
-ax.imshow(resized_im_original, interpolation='nearest')
+    ax = figure.add_subplot(nimages, cols, (im_i * cols) + 1)
+    ax.set_axis_off()
+    ax.imshow(im.original, interpolation='nearest')
 
-ax = figure.add_subplot(nimages, cols, (i * cols) + 2)
-ax.set_axis_off()
-ax.imshow(resized_im_gray, interpolation='nearest')
+    ax = figure.add_subplot(nimages, cols, (im_i * cols) + 2)
+    ax.set_axis_off()
+    ax.imshow(im.gray, interpolation='nearest')
 
-ax = figure.add_subplot(nimages, cols, (i * cols) + 3)
-ax.set_axis_off()
-ax.imshow(sift_im, interpolation='nearest')
+    for detector_idx in range(len(detectors)):
+        detector = detectors[detector_idx][1]
+        detector_name = detectors[detector_idx][0]
+        kp = detector.detect(im.gray, None)
+        # resized_im_gray = im.gray  # cv2.resize(im.gray, (128, 128), interpolation=cv2.INTER_CUBIC)
+        # resized_im_original = im.original  # cv2.resize(im.original, (128, 128), interpolation=cv2.INTER_CUBIC)
 
-ax = figure.add_subplot(nimages, cols, (i * cols) + 4)
-ax.set_axis_off()
-ax.imshow(surf_im, interpolation='nearest')
+        im_with_kp = drawKeyPoints(im.original, im.gray, kp)
 
-ax = figure.add_subplot(nimages, cols, (i * cols) + 5)
-ax.set_axis_off()
-ax.imshow(kaze_im, interpolation='nearest')
-i += 1
+        ax = figure.add_subplot(nimages, cols, (im_i * cols) + detector_idx + 3)
+        ax.set_axis_off()
+        ax.imshow(im_with_kp, interpolation='nearest')
+        if im_i == 0:
+            ax.set_title(detector_name)
 
-canvas.print_figure('feature_extraction_compare.png')
+canvas.print_figure('results/feature_extraction_compare.png')

@@ -20,8 +20,9 @@ class ImageDataset:
                        'horse',
                        'ship',
                        'truck']
-    TRAINING_BATCHES = ['data_batch_1', 'data_batch_2', 'data_batch_3', 'data_batch_4', 'data_batch_5']
-    TEST_BATCH = 'test_batch'
+    TRAINING_BATCHES = {'data_batch_1': [], 'data_batch_2': [], 'data_batch_3': [], 'data_batch_4': [],
+                        'data_batch_5': []}
+    TEST_BATCH = {'test_batch': []}
 
     def label(self, number):
         return ImageDataset.CIFAR_10_LABELS[number]
@@ -50,17 +51,24 @@ class ImageDataset:
                 os.makedirs(directory)
             self.array2_image(data[i, :], directory + '/img_' + str(i) + '.png')
 
-    def load_training_data(self, samplesPerClass=-1):
-        imageContexts = []
-        for trainingBatchFile in self.TRAINING_BATCHES:
-            loaded = self.__load_from_pickle_file(trainingBatchFile)
-            if samplesPerClass > 0:
-                loaded = np.random.choice(loaded, samplesPerClass)
-            imageContexts = np.concatenate((imageContexts, loaded))
-        return imageContexts
+    def load_data(self, image_paths):
+        image_ctx = []
+        for file in image_paths.keys():
+            loaded = self.__load_from_pickle_file(file)
+            indices = image_paths.get(file)
+            if indices is not None and len(indices) > 0:
+                loaded = loaded[indices]
+            image_ctx = np.concatenate((image_ctx, loaded))
+        return image_ctx
+
+    def load_training_data(self, samples=-1):
+        image_ctx = self.load_data(self.TRAINING_BATCHES)
+        if samples > 0:
+            image_ctx = np.random.choice(image_ctx, samples)
+        return image_ctx
 
     def load_test_data(self):
-        return self.__load_from_pickle_file(self.TEST_BATCH)
+        return self.load_data(self.TEST_BATCH)
 
     def __load_from_pickle_file(self, pickle):
         data, labels = self.unpickle(pickle)
@@ -68,7 +76,7 @@ class ImageDataset:
         for i in range(data.shape[0]):
             image = data[i, :]
             label = labels[i]
-            imageContexts.append(ImageContext(image, label))
+            imageContexts.append(ImageContext(pickle, i, image, label))
         return imageContexts
 
 # data, labels = unpickle('data_batch_5')
