@@ -43,7 +43,7 @@ imageDataset = ImageDataset()
 #     imageContext.features = featureDescriptor.describe(imageContext)
 #     imageContexts.append(imageContext)
 
-imageContexts = imageDataset.load_training_data(1000)
+imageContexts = imageDataset.load_training_data()
 testImageContexts = np.random.choice(imageDataset.load_test_data(), 10)
 progressBar.prefix = 'Extracting features from training images'
 featureExtractor.extractAndCompute(imageContexts)
@@ -90,7 +90,7 @@ for test_i in range(test_imgs_count):
     table.set_fontsize(14)
 
 plt.tight_layout()
-canvas.print_figure('results/prediction.png', bbox_inches='tight', dpi=100)
+canvas.print_figure('../../results/prediction.png', bbox_inches='tight', dpi=100)
 
 for test_i in range(test_imgs_count):
     testImageContext = testImageContexts[test_i]
@@ -108,7 +108,7 @@ for test_i in range(test_imgs_count):
         neighbor_img_ax.spines['left'].set_color('0.5')
         neighbor_img_ax.imshow(neighbor.original, interpolation='nearest')
     plt.tight_layout()
-    canvas.print_figure('results/prediction_' + str(test_i) + '_nn.png', bbox_inches='tight', dpi=100)
+    canvas.print_figure('../../results/prediction_' + str(test_i) + '_nn.png', bbox_inches='tight', dpi=100)
 
 
 print("The score: " + str(score))

@@ -9,7 +9,7 @@ class ImageDataset:
     def __init__(self):
         pass
 
-    CIFAR_PICKLE_DIR = './cifar-10-batches-py'
+    CIFAR_PICKLE_DIR = '../../cifar-10-batches-py'
     CIFAR_10_LABELS = ['airplane',
                        'automobile',
                        'bird',

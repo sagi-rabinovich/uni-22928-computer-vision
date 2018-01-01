@@ -27,26 +27,29 @@ class CodeBook:
         self._progressBar = progressBar
         self.__build(imageContexts)
 
-    def __build(self, imageContexts):
+    def __build(self, image_contexts):
         print('Building code book')
         random.seed((1000, 2000))
-        if len(imageContexts) <= 0:
-            raise Exception('Empty argument imageContexts')
+        if len(image_contexts) <= 0:
+            raise Exception('Empty argument image_contexts')
 
-        features = [imageContext.features for imageContext in imageContexts]
 
         labelCount = 10
         # self._k = int(math.ceil(labelCount * np.average([len(featuresForImage) for featuresForImage in features])))
         self._k = 100
         # todo handle cases where there are photos without features?
-        features = np.concatenate(features)  # flat map
 
         #
         # whitened = whiten(features)
         # codebook, distortion = kmeans(whitened, k)
         # self._codebook = codebook
         print('computing kmeans for features' + str(features.shape))
-        self._kmeans = MiniBatchKMeans(n_clusters=self._k, verbose=1).fit(features)
+        self._kmeans = MiniBatchKMeans(n_clusters=self._k, verbose=1)
+
+        def __build_(image_ctx):
+            self._kmeans.fit(image_ctx.features)
+
+        self._progressBar.forEach(image_contexts, __build)
 
     def computeCodeVector(self, imageContexts):
         def __computeCodeVector(imageContext):
@@ -96,4 +99,4 @@ class CodeBook:
                 ax.set_axis_off()
                 ax.imshow(kpImage, interpolation='nearest')
 
-        canvas.print_figure('results/example_codes.png')
+        canvas.print_figure('../../results/example_codes.png')

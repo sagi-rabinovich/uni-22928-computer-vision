@@ -1,4 +1,7 @@
 # coding=utf-8
+import datetime
+
+
 class ProgressBar:
     def __init__(self):
         """
@@ -16,6 +19,8 @@ class ProgressBar:
         self.fill = '█'
         self.iteration = 0
         self.total = 0
+        self._start = None
+        self._end = None
 
     def forEach(self, items, action):
         total = len(items)
@@ -29,6 +34,7 @@ class ProgressBar:
         self.iteration = 0
         self.total = total
         self.update(0, total)
+        self._start = datetime.datetime.now()
 
     # Print iterations progress
     def update(self, iteration, total):
@@ -38,10 +44,12 @@ class ProgressBar:
             iteration   - Required  : current iteration (Int)
             total       - Required  : total iterations (Int)
         """
-        percent = ("{0:." + str(self.decimals) + "f}").format(100 * (iteration / float(total)))
+        completed = (iteration / float(total))
+        percent = ("{0:." + str(self.decimals) + "f}").format(100 * completed)
         filledLength = int(self.length * iteration // total)
         bar = self.fill * filledLength + '-' * (self.length - filledLength)
-        print '\r%s |%s| %s%% %s' % (self.prefix, bar, percent, self.suffix),
+        eta = datetime.timedelta(microseconds=(datetime.datetime.now() - self._start).microseconds / completed)
+        print '\r%s |%s| %s%% %s [ETA: %s]' % (self.prefix, bar, percent, self.suffix, eta),
         # Print New Line on Complete
         if iteration == total:
             print

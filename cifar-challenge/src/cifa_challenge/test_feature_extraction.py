@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
 
-from dense_detector import DenseDetector
+from cifa_challenge.dense_detector import DenseDetector
 from image_dataset import ImageDataset
 from progress_bar import ProgressBar
 
@@ -50,8 +50,6 @@ for im_i in range(len(imgs)):
         detector = detectors[detector_idx][1]
         detector_name = detectors[detector_idx][0]
         kp = detector.detect(im.gray, None)
-        # resized_im_gray = im.gray  # cv2.resize(im.gray, (128, 128), interpolation=cv2.INTER_CUBIC)
-        # resized_im_original = im.original  # cv2.resize(im.original, (128, 128), interpolation=cv2.INTER_CUBIC)
 
         im_with_kp = drawKeyPoints(im.original, im.gray, kp)
 
@@ -61,4 +59,4 @@ for im_i in range(len(imgs)):
         if im_i == 0:
             ax.set_title(detector_name)
 
-canvas.print_figure('results/feature_extraction_compare.png')
+canvas.print_figure('../../results/feature_extraction_compare.png')
