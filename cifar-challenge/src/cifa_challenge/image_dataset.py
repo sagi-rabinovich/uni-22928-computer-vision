@@ -61,8 +61,9 @@ class ImageDataset:
             image_ctx = np.concatenate((image_ctx, loaded))
         return image_ctx
 
-    def load_training_data(self, samples=-1):
-        image_ctx = self.load_data(self.TRAINING_BATCHES)
+    def load_training_data(self, samples=-1, batch=''):
+        batches = self.TRAINING_BATCHES if batch == '' else {batch: self.TRAINING_BATCHES[batch]}
+        image_ctx = self.load_data(batches)
         if samples > 0:
             image_ctx = np.random.choice(image_ctx, samples)
         return image_ctx

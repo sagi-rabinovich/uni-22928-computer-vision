@@ -61,11 +61,11 @@ class CodeBook:
             # todo whitening features multiple times
             # todo optimize - memory is not freed in image context and all sub calculations are kept
             # imageContext.quantized_descriptors = vq(whiten(imageContext.features), self._codebook, False)
-            imageContext.quantizedDescriptors = self._kmeans.predict(imageContext.features)
-            counter = collections.Counter(imageContext.quantizedDescriptors)
-            imageContext.codeVector = np.zeros(self._k, dtype=float)
+            imageContext.quantized_descriptors = self._kmeans.predict(imageContext.features)
+            counter = collections.Counter(imageContext.quantized_descriptors)
+            imageContext.code_vector = np.zeros(self._k, dtype=float)
             for code in counter.keys():
-                imageContext.codeVector[code] = counter[code]
+                imageContext.code_vector[code] = counter[code]
 
     def printExampleCodes(self, imageContexts, sampleCodesCount, samplesImagesPerCode):
         self._logger.info('Printing example codes')
@@ -77,26 +77,29 @@ class CodeBook:
 
         originals = [imageContext.original for imageContext in imageContexts]
         repeats = [len(imageContext.features) for imageContext in imageContexts]
-        images = np.repeat(originals, repeats, axis=0)
-        keyPoints = np.concatenate([imageContext.keyPoints for imageContext in imageContexts])
-        quantizedDescriptors = np.concatenate([imageContext.quantizedDescriptors for imageContext in imageContexts])
+        images_repeated = np.repeat(originals, repeats, axis=0)
+        all_key_points = np.concatenate([imageContext.key_points for imageContext in imageContexts])
+        all_quantized_descriptors = np.concatenate(
+            [imageContext.quantized_descriptors for imageContext in imageContexts])
 
         # codes
         for row in range(sampleCodesCount):
             code = codes[row]
-            b = quantizedDescriptors == code
-            clusteredFeatures = keyPoints[b]
+            b = all_quantized_descriptors == code
+            clusteredFeatures = all_key_points[b]
             samples = np.random.choice(range(len(clusteredFeatures)), samplesImagesPerCode)
             sampleKeyPoints = clusteredFeatures[samples]
-            sampleImages = images[b][samples]
-            for column in range(min(len(samples), samplesImagesPerCode)):
+            sampleImages = images_repeated[b][samples]
+            for column in range(len(samples)):
                 sampleImage = sampleImages[column]
                 sampleKp = sampleKeyPoints[column]
+
                 radius = int(math.ceil(sampleKp.size / 2.0))
                 x = int(sampleKp.pt[0])
                 y = int(sampleKp.pt[1])
                 kpImage = sampleImage[max(x - radius, 0):min(x + radius, sampleImage.shape[0]),
                           max(y - radius, 0):min(y + radius, sampleImage.shape[1])]
+
                 figIndex = row * samplesImagesPerCode + column + 1
                 ax = figure.add_subplot(sampleCodesCount, samplesImagesPerCode, figIndex)
                 ax.set_axis_off()

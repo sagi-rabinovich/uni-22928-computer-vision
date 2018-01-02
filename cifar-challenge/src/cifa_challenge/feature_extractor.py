@@ -24,7 +24,7 @@ class FeatureExtractor:
 
     def __describe(self, imageContexts):
         for imageContext in self._progressBar.track(imageContexts):
-            keyPoints, descriptors = self._descriptor.compute(imageContext.gray, imageContext.keyPoints)
+            keyPoints, descriptors = self._descriptor.compute(imageContext.gray, imageContext.key_points)
             imageContext.features = descriptors
 
     def extractAndCompute(self, imageContexts):
@@ -47,6 +47,6 @@ class FeatureExtractor:
 
             if len(key_points) == 0:
                 raise Exception('Could not find key points for image: ' + imageContext.image_path())
-            imageContext.keyPoints = key_points
+            imageContext.key_points = key_points
 
         self.__describe(imageContexts)

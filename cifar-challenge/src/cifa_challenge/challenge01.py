@@ -25,9 +25,9 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
-progressBar = ProgressBar()
-featureExtractor = FeatureExtractor(progressBar)
-imageDataset = ImageDataset()
+progress_bar = ProgressBar()
+feature_extractor = FeatureExtractor(progress_bar)
+image_dataset = ImageDataset()
 #
 # imgDir = '.\\images\\test_batch\\2.bird'
 # imagePaths = [f for f in listdir(imgDir) if isfile(join(imgDir, f))]
@@ -43,76 +43,80 @@ imageDataset = ImageDataset()
 #     imageContext.features = featureDescriptor.describe(imageContext)
 #     imageContexts.append(imageContext)
 
-imageContexts = imageDataset.load_training_data()
-testImageContexts = np.random.choice(imageDataset.load_test_data(), 10)
-progressBar.prefix = 'Extracting features from training images'
-featureExtractor.extractAndCompute(imageContexts)
-progressBar.prefix = 'Extracting features from test images'
-featureExtractor.extractAndCompute(testImageContexts)
+imageContexts = image_dataset.load_training_data(samples=100, batch='data_batch_1')
+test_image_contexts = np.random.choice(image_dataset.load_test_data(), 10)
+progress_bar.prefix = 'Extracting features from training images'
+feature_extractor.extractAndCompute(imageContexts)
+progress_bar.prefix = 'Extracting features from test images'
+feature_extractor.extractAndCompute(test_image_contexts)
 
-progressBar.prefix = 'Building code book'
-codeBook = CodeBook(progressBar, imageContexts)
-progressBar.prefix = 'Computing code vectors for training images'
-codeBook.computeCodeVector(imageContexts)
-progressBar.prefix = 'Computing code vectors for test images'
-codeBook.computeCodeVector(testImageContexts)
-progressBar.prefix = 'Training classifier'
+progress_bar.prefix = 'Building code book'
+code_book = CodeBook(progress_bar, imageContexts)
+progress_bar.prefix = 'Computing code vectors for training images'
+code_book.computeCodeVector(imageContexts)
+progress_bar.prefix = 'Computing code vectors for test images'
+code_book.computeCodeVector(test_image_contexts)
+progress_bar.prefix = 'Training classifier'
 classifier = Classifier().learn(imageContexts)
-progressBar.prefix = 'Testing on test data'
-score = classifier.score(testImageContexts)
+progress_bar.prefix = 'Testing on test data'
+score = classifier.score(test_image_contexts)
+classifier.plot_confusion_matrix(test_image_contexts, classifier.predict(test_image_contexts),
+                                 image_dataset.CIFAR_10_LABELS)
 
-## Print predictions
-logger.info('Printing predictions')
-plt.ioff()
+print("The score: " + str(score))
 
-figure = Figure(figsize=(10, 10))
-canvas = FigureCanvas(figure)
-nearest_neighbors_count = 10
-nearest_neighbors_columns = 5
-nearest_neighbors_rows = int(np.math.ceil(float(nearest_neighbors_count) / nearest_neighbors_columns))
 
-predictions = classifier.predict(testImageContexts)
-test_imgs_count = len(testImageContexts)
-
-for test_i in range(test_imgs_count):
-    testImageContext = testImageContexts[test_i]
-    predictedLabelNumber = predictions[test_i]
-    predictedLabelText = imageDataset.label(predictedLabelNumber)
-    test_im_ax = figure.add_subplot(1, test_imgs_count, test_i + 1)
-    # ax = figure.add_subplot(1 + nearest_neighbors_rows, test_imgs_count*nearest_neighbors_columns, test_i*nearest_neighbors_columns)
-    test_im_ax.set_axis_off()
-    test_im_ax.imshow(testImageContext.original, interpolation='nearest')
-    table = test_im_ax.table(cellText=[[predictedLabelText, imageDataset.label(testImageContext.label)]],
-                             colLabels=['Predicted', 'Correct'],
-                             loc='bottom')
-
-    table.scale(1, 4)
-    table.set_fontsize(14)
-
-plt.tight_layout()
-canvas.print_figure('../../results/prediction.png', bbox_inches='tight', dpi=100)
-
-for test_i in range(test_imgs_count):
-    testImageContext = testImageContexts[test_i]
-    neighbors = classifier.knn(testImageContext, nearest_neighbors_count)
+def print_predictions():
+    logger.info('Printing predictions')
+    plt.ioff()
 
     figure = Figure(figsize=(10, 10))
     canvas = FigureCanvas(figure)
-    for ni in range(len(neighbors)):
-        neighbor = neighbors[ni]
-        neighbor_img_ax = figure.add_subplot(nearest_neighbors_rows, nearest_neighbors_columns, ni + 1)
-        neighbor_img_ax.set_axis_off()
-        neighbor_img_ax.spines['bottom'].set_color('0.5')
-        neighbor_img_ax.spines['top'].set_color('0.5')
-        neighbor_img_ax.spines['right'].set_color('0.5')
-        neighbor_img_ax.spines['left'].set_color('0.5')
-        neighbor_img_ax.imshow(neighbor.original, interpolation='nearest')
+    nearest_neighbors_count = 10
+    nearest_neighbors_columns = 5
+    nearest_neighbors_rows = int(np.math.ceil(float(nearest_neighbors_count) / nearest_neighbors_columns))
+
+    predictions = classifier.predict(test_image_contexts)
+    test_imgs_count = len(test_image_contexts)
+
+    for test_i in range(test_imgs_count):
+        testImageContext = test_image_contexts[test_i]
+        predictedLabelNumber = predictions[test_i]
+        predictedLabelText = image_dataset.label(predictedLabelNumber)
+        test_im_ax = figure.add_subplot(1, test_imgs_count, test_i + 1)
+        # ax = figure.add_subplot(1 + nearest_neighbors_rows, test_imgs_count*nearest_neighbors_columns, test_i*nearest_neighbors_columns)
+        test_im_ax.set_axis_off()
+        test_im_ax.imshow(testImageContext.original, interpolation='nearest')
+        table = test_im_ax.table(cellText=[[predictedLabelText, image_dataset.label(testImageContext.label)]],
+                                 colLabels=['Predicted', 'Correct'],
+                                 loc='bottom')
+
+        table.scale(1, 4)
+        table.set_fontsize(14)
+
     plt.tight_layout()
-    canvas.print_figure('../../results/prediction_' + str(test_i) + '_nn.png', bbox_inches='tight', dpi=100)
+    canvas.print_figure('../../results/prediction.png', bbox_inches='tight', dpi=100)
+
+    for test_i in range(test_imgs_count):
+        testImageContext = test_image_contexts[test_i]
+        neighbors = classifier.knn(testImageContext, nearest_neighbors_count)
+
+        figure = Figure(figsize=(10, 10))
+        canvas = FigureCanvas(figure)
+        for ni in range(len(neighbors)):
+            neighbor = neighbors[ni]
+            neighbor_img_ax = figure.add_subplot(nearest_neighbors_rows, nearest_neighbors_columns, ni + 1)
+            neighbor_img_ax.set_axis_off()
+            neighbor_img_ax.spines['bottom'].set_color('0.5')
+            neighbor_img_ax.spines['top'].set_color('0.5')
+            neighbor_img_ax.spines['right'].set_color('0.5')
+            neighbor_img_ax.spines['left'].set_color('0.5')
+            neighbor_img_ax.imshow(neighbor.original, interpolation='nearest')
+        plt.tight_layout()
+        canvas.print_figure('../../results/prediction_' + str(test_i) + '_nn.png', bbox_inches='tight', dpi=100)
 
 
-print("The score: " + str(score))
-# codeBook.printExampleCodes(imageContexts, 10, 20)
+# code_book.printExampleCodes(imageContexts, 10, 20)
 
 # dummy = img.copy()
 # cv2.drawKeypoints(imageContext.gray, imageContext.key_points, dummy, flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT)
