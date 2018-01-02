@@ -6,8 +6,7 @@ from progress_bar import ProgressBar
 progressBar = ProgressBar()
 imageDataset = ImageDataset()
 featureExtractor = FeatureExtractor(progressBar)
-nimages = 5
-imgs = imageDataset.load_training_data(nimages)
+imgs = imageDataset.load_training_data(500)
 featureExtractor.extractAndCompute(imgs)
 codeBook = CodeBook(progressBar, imgs)
 codeBook.computeCodeVector(imgs)

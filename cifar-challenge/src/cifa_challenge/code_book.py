@@ -1,4 +1,5 @@
 import collections
+import logging
 import math
 
 import numpy as np
@@ -13,7 +14,9 @@ from sklearn.cluster import MiniBatchKMeans
 
 
 class CodeBook:
+
     def __init__(self, progressBar, imageContexts):
+        self._logger = logging.getLogger('cifar-challenge.CodeBook')
         """
         _codebook : ndarray
            A k by N array of k centroids. The i'th centroid
@@ -25,10 +28,11 @@ class CodeBook:
         self._kmeans = None
         self._k = -1
         self._progressBar = progressBar
+
         self.__build(imageContexts)
 
     def __build(self, image_contexts):
-        print('Building code book')
+        self._logger.info('Building code book')
         random.seed((1000, 2000))
         if len(image_contexts) <= 0:
             raise Exception('Empty argument image_contexts')
@@ -43,11 +47,13 @@ class CodeBook:
         # whitened = whiten(features)
         # codebook, distortion = kmeans(whitened, k)
         # self._codebook = codebook
-        print('computing kmeans for features' + str(features.shape))
-        self._kmeans = MiniBatchKMeans(n_clusters=self._k, verbose=1)
+        self._progressBar.prefix = 'computing kmeans'
+        self._kmeans = MiniBatchKMeans(n_clusters=self._k)
 
-        for image_ctx in self._progressBar.track(image_contexts):
-            self._kmeans.fit(image_ctx.features)
+        split = len(image_contexts) / 10000 + 1
+        for batch in self._progressBar.track(np.array_split(image_contexts, split)):
+            features = np.concatenate([img_ctx.features for img_ctx in batch])
+            self._kmeans.fit(features)
 
     def computeCodeVector(self, imageContexts):
         for imageContext in self._progressBar.track(imageContexts):
@@ -62,6 +68,7 @@ class CodeBook:
                 imageContext.codeVector[code] = counter[code]
 
     def printExampleCodes(self, imageContexts, sampleCodesCount, samplesImagesPerCode):
+        self._logger.info('Printing example codes')
         codes = np.random.choice(range(self._k), sampleCodesCount)
 
         plt.ioff()

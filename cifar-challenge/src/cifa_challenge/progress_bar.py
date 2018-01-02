@@ -16,7 +16,7 @@ class ProgressBar:
         self.suffix = ''
         self.decimals = 1
         self.length = 100
-        self.fill = '█'
+        self.fill = '>'
         self.iteration = 0
         self.total = 0
         self._start = None
