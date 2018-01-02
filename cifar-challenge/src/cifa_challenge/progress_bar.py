@@ -21,6 +21,7 @@ class ProgressBar:
         self.total = 0
         self._start = None
         self._end = None
+        self._update_after_n_intervals = 1
 
     def track(self, items):
         total = len(items)
@@ -34,6 +35,7 @@ class ProgressBar:
         self.iteration = 0
         self.total = total
         self._start = datetime.datetime.now()
+        self._update_after_n_intervals = max(total / 1000, 1)
         self.update(0, total)
 
     # Print iterations progress
@@ -44,6 +46,9 @@ class ProgressBar:
             iteration   - Required  : current iteration (Int)
             total       - Required  : total iterations (Int)
         """
+        if iteration % self._update_after_n_intervals:
+            return
+
         completed = (iteration / float(total))
         percent = ("{0:." + str(self.decimals) + "f}").format(100 * completed)
         filledLength = int(self.length * iteration // total)
