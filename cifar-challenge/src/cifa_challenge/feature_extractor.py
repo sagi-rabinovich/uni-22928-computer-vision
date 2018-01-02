@@ -2,6 +2,7 @@ import logging
 
 import cv2
 import numpy as np
+from sklearn import preprocessing
 
 from dense_detector import DenseDetector
 
@@ -25,7 +26,7 @@ class FeatureExtractor:
     def __describe(self, imageContexts):
         for imageContext in self._progressBar.track(imageContexts):
             keyPoints, descriptors = self._descriptor.compute(imageContext.gray, imageContext.key_points)
-            imageContext.features = descriptors
+            imageContext.features = preprocessing.normalize(descriptors, norm='l2')
 
     def extractAndCompute(self, imageContexts):
         for imageContext in self._progressBar.track(imageContexts):
