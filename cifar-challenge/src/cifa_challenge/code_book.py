@@ -12,6 +12,8 @@ from numpy import random
 # from scipy.cluster.vq import vq
 from sklearn.cluster import MiniBatchKMeans
 
+from my_utils import flatmap
+
 
 class CodeBook:
 
@@ -37,7 +39,6 @@ class CodeBook:
         if len(image_contexts) <= 0:
             raise Exception('Empty argument image_contexts')
 
-
         labelCount = 10
         # self._k = int(math.ceil(labelCount * np.average([len(featuresForImage) for featuresForImage in features])))
         self._k = 100
@@ -52,7 +53,7 @@ class CodeBook:
 
         split = len(image_contexts) / 10000 + 1
         for batch in self._progressBar.track(np.array_split(image_contexts, split)):
-            features = np.concatenate([img_ctx.features for img_ctx in batch])
+            features = list(flatmap(lambda x: x.features, batch))
             self._kmeans.fit(features)
 
     def computeCodeVector(self, imageContexts):
@@ -78,9 +79,8 @@ class CodeBook:
         originals = [imageContext.original for imageContext in imageContexts]
         repeats = [len(imageContext.features) for imageContext in imageContexts]
         images_repeated = np.repeat(originals, repeats, axis=0)
-        all_key_points = np.concatenate([imageContext.key_points for imageContext in imageContexts])
-        all_quantized_descriptors = np.concatenate(
-            [imageContext.quantized_descriptors for imageContext in imageContexts])
+        all_key_points = flatmap(lambda image_context: image_context.key_points, imageContexts)
+        all_quantized_descriptors = flatmap(lambda image_context: image_context.quantized_descriptors, imageContexts)
 
         # codes
         for row in range(sampleCodesCount):

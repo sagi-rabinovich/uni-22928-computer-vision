@@ -1,7 +1,6 @@
 import logging
 
 import cv2
-import numpy as np
 from sklearn import preprocessing
 
 from dense_detector import DenseDetector
@@ -37,14 +36,10 @@ class FeatureExtractor:
                     self._logger.warn(
                         '[' + imageContext.image_path() + '] Did not detect any key points with detector of type: ' + detector.__class__.__name__)
                 else:
-                    # drop small patches
-                    detected_kp = [kp for kp in detected_kp if kp.size >= self._min_patch_diameter]
-                    if len(detected_kp) == 0:
-                        # self._logger.warn(
-                        #     '[' + imageContext.image_path() + '] Filtered all key points of detector: ' + detector.__class__.__name__)
-                        pass
-                    else:
-                        key_points = np.concatenate((key_points, detected_kp))
+                    for kp in detected_kp:
+                        # drop small patches
+                        if kp.size >= self._min_patch_diameter:
+                            key_points.append(kp)
 
             if len(key_points) == 0:
                 raise Exception('Could not find key points for image: ' + imageContext.image_path())

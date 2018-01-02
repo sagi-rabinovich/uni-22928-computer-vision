@@ -58,7 +58,7 @@ class ImageDataset:
             indices = image_paths.get(file)
             if indices is not None and len(indices) > 0:
                 loaded = loaded[indices]
-            image_ctx = np.concatenate((image_ctx, loaded))
+            image_ctx.extend(loaded)
         return image_ctx
 
     def load_training_data(self, samples=-1, batch=''):
