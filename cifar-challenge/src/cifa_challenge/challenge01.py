@@ -15,7 +15,7 @@ from progress_bar import ProgressBar
 # create logger with 'spam_application'
 logger = logging.getLogger('cifar-challenge')
 logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('spam.log')
+fh = logging.FileHandler('../../spam.log')
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)

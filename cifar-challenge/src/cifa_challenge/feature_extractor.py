@@ -23,14 +23,12 @@ class FeatureExtractor:
         self._logger = logging.getLogger('cifar-challenge.FeatureExtractor')
 
     def __describe(self, imageContexts):
-        def __describe_(imageContext):
+        for imageContext in self._progressBar.track(imageContexts):
             keyPoints, descriptors = self._descriptor.compute(imageContext.gray, imageContext.keyPoints)
             imageContext.features = descriptors
 
-        self._progressBar.forEach(imageContexts, __describe_)
-
     def extractAndCompute(self, imageContexts):
-        def _extract(imageContext):
+        for imageContext in self._progressBar.track(imageContexts):
             key_points = []
             for detector in self._detectors:
                 detected_kp = detector.detect(imageContext.gray, None)
@@ -51,5 +49,4 @@ class FeatureExtractor:
                 raise Exception('Could not find key points for image: ' + imageContext.image_path())
             imageContext.keyPoints = key_points
 
-        self._progressBar.forEach(imageContexts, _extract)
         self.__describe(imageContexts)

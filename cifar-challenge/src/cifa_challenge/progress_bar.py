@@ -22,19 +22,19 @@ class ProgressBar:
         self._start = None
         self._end = None
 
-    def forEach(self, items, action):
+    def track(self, items):
         total = len(items)
         self.start(total)
         for item in items:
-            action(item)
+            yield item
             self.increment()
 
     def start(self, total):
         print
         self.iteration = 0
         self.total = total
-        self.update(0, total)
         self._start = datetime.datetime.now()
+        self.update(0, total)
 
     # Print iterations progress
     def update(self, iteration, total):
@@ -48,7 +48,9 @@ class ProgressBar:
         percent = ("{0:." + str(self.decimals) + "f}").format(100 * completed)
         filledLength = int(self.length * iteration // total)
         bar = self.fill * filledLength + '-' * (self.length - filledLength)
-        eta = datetime.timedelta(microseconds=(datetime.datetime.now() - self._start).microseconds / completed)
+        eta = datetime.timedelta(
+            seconds=(datetime.datetime.now() - self._start).total_seconds() / completed * (
+                    1 - completed)) if completed > 0 else ''
         print '\r%s |%s| %s%% %s [ETA: %s]' % (self.prefix, bar, percent, self.suffix, eta),
         # Print New Line on Complete
         if iteration == total:

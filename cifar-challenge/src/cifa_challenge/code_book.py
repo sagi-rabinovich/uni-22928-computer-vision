@@ -46,13 +46,11 @@ class CodeBook:
         print('computing kmeans for features' + str(features.shape))
         self._kmeans = MiniBatchKMeans(n_clusters=self._k, verbose=1)
 
-        def __build_(image_ctx):
+        for image_ctx in self._progressBar.track(image_contexts):
             self._kmeans.fit(image_ctx.features)
 
-        self._progressBar.forEach(image_contexts, __build)
-
     def computeCodeVector(self, imageContexts):
-        def __computeCodeVector(imageContext):
+        for imageContext in self._progressBar.track(imageContexts):
             # todo try to run pca on features before codebooking
             # todo whitening features multiple times
             # todo optimize - memory is not freed in image context and all sub calculations are kept
@@ -62,8 +60,6 @@ class CodeBook:
             imageContext.codeVector = np.zeros(self._k, dtype=float)
             for code in counter.keys():
                 imageContext.codeVector[code] = counter[code]
-
-        self._progressBar.forEach(imageContexts, __computeCodeVector)
 
     def printExampleCodes(self, imageContexts, sampleCodesCount, samplesImagesPerCode):
         codes = np.random.choice(range(self._k), sampleCodesCount)
