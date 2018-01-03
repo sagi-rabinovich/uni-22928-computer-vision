@@ -1,5 +1,6 @@
 # coding=utf-8
 import datetime
+import logging
 
 
 class ProgressBar:
@@ -22,6 +23,7 @@ class ProgressBar:
         self._start = None
         self._end = None
         self._update_after_n_intervals = 1
+        self._logger = logging.getLogger('cifar-challenge.ProgressBar')
 
     def track(self, items, suffix=''):
         total = len(items)
@@ -32,12 +34,14 @@ class ProgressBar:
             self.increment()
         self.suffix = ''
 
+
     def start(self, total):
         self.iteration = 0
         self.total = total
         self._start = datetime.datetime.now()
         self._update_after_n_intervals = max(total / 1000, 1)
-        print '\nStarting tracking at ' + str(self._start)
+        self._logger.info('Started tracking: %s - %s' % (self.prefix, self.suffix))
+        print
         self.update(0, total)
 
     # Print iterations progress
@@ -70,3 +74,4 @@ class ProgressBar:
     def done(self):
         self.iteration = self.total
         self.update(self.iteration, self.total)
+

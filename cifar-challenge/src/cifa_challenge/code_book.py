@@ -6,12 +6,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
-from memory_profiler import profile
 from numpy import random
 # from scipy.cluster.vq import kmeans
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
 from sklearn.cluster import MiniBatchKMeans
+from sklearn.preprocessing import StandardScaler
 
 from my_utils import flatmap
 
@@ -29,20 +29,21 @@ class CodeBook:
         """
         self._codebook = None
         self._kmeans = None
+        self._normalizer = StandardScaler(copy=False)  # maybe should be removed when refactored to pipeline
         self._k = -1
         self._progressBar = progressBar
         self._labels_ = []
 
-    @profile
     def __build(self, image_contexts):
         random.seed((1000, 2000))
         if len(image_contexts) <= 0:
             raise Exception('Empty argument image_contexts')
 
         labelCount = 10
-        self._k = int(0.7 *
-                      math.ceil(
-                          labelCount * np.mean([len(image_context.features) for image_context in image_contexts])))
+        self._k = 4000
+        # self._k = int(0.7 *
+        #               math.ceil(
+        #                   labelCount * np.mean([len(image_context.features) for image_context in image_contexts])))
         self._logger.info('Building code book [k=' + str(self._k) + ']')
 
         # self._k = 100
@@ -57,11 +58,10 @@ class CodeBook:
 
         split = len(image_contexts) / 5000 + 1
         for batch in self._progressBar.track(np.array_split(image_contexts, split)):
-            features = list(flatmap(lambda x: x.features, batch))
+            features = flatmap(lambda x: x.features, batch)
             self._kmeans.partial_fit(features)
             self._labels_.extend(self._kmeans.labels_)
 
-    @profile
     def fit(self, image_contexts):
         self.__build(image_contexts)
 
@@ -76,8 +76,15 @@ class CodeBook:
                                             feature_start_index:feature_start_index + current_feature_count]
             feature_start_index += current_feature_count
         self.__compute_code_vector(image_contexts)
-
+        self.__normalize(image_contexts, should_fit=True)
         return self
+
+    def __normalize(self, image_contexts, should_fit):
+        code_vectors = [x.code_vector for x in image_contexts]
+        code_vectors = self._normalizer.fit_transform(code_vectors, None) if should_fit else self._normalizer.transform(
+            code_vectors, None)
+        for i, img_ctx in enumerate(image_contexts):
+            img_ctx.code_vector = code_vectors[i]
 
     def __compute_code_vector(self, image_contexts):
         self._progressBar.prefix += ' - computing code vectors'
@@ -87,11 +94,11 @@ class CodeBook:
             for code in counter.keys():
                 imageContext.code_vector[code] = counter[code]
 
-    @profile
-    def compute_for_test_images(self, test_image_context):
-        for test_img_ctx in self._progressBar.track(test_image_context):
+    def compute_for_test_images(self, test_image_contexts):
+        for test_img_ctx in self._progressBar.track(test_image_contexts):
             test_img_ctx.quantized_descriptors = self._kmeans.predict(test_img_ctx.features)
-        self.__compute_code_vector(test_image_context)
+        self.__compute_code_vector(test_image_contexts)
+        self.__normalize(test_image_contexts, should_fit=False)
 
     def printExampleCodes(self, image_contexts, sample_codes_count, samples_images_per_code):
         self._logger.info('Printing example codes')

@@ -1,3 +1,4 @@
+import cPickle
 import os
 
 import numpy as np
@@ -10,6 +11,7 @@ class ImageDataset:
         pass
 
     CIFAR_PICKLE_DIR = '../../cifar-10-batches-py'
+    PRECOMUTED_DIR = '../../precomputed/'
     CIFAR_10_LABELS = ['airplane',
                        'automobile',
                        'bird',
@@ -32,8 +34,7 @@ class ImageDataset:
         im = Image.fromarray(A)
         im.save(path)
 
-    def unpickle(self, file):
-        import cPickle
+    def __unpickle_image_dataset(self, file):
         with open(os.path.join(self.CIFAR_PICKLE_DIR, file), 'rb') as fo:
             dict = cPickle.load(fo)
         data = dict.get('data')
@@ -51,7 +52,7 @@ class ImageDataset:
                 os.makedirs(directory)
             self.array2_image(data[i, :], directory + '/img_' + str(i) + '.png')
 
-    def load_data(self, image_paths):
+    def load_data(self, image_paths, samples=-1):
         image_ctx = []
         for file in image_paths.keys():
             loaded = self.__load_from_pickle_file(file)
@@ -59,26 +60,34 @@ class ImageDataset:
             if indices is not None and len(indices) > 0:
                 loaded = loaded[indices]
             image_ctx.extend(loaded)
-        return image_ctx
 
-    def load_training_data(self, samples=-1, batch=''):
-        batches = self.TRAINING_BATCHES if batch == '' else {batch: self.TRAINING_BATCHES[batch]}
-        image_ctx = self.load_data(batches)
         if samples > 0:
             image_ctx = np.random.choice(image_ctx, samples)
         return image_ctx
 
-    def load_test_data(self):
-        return self.load_data(self.TEST_BATCH)
+    def load_training_data(self, samples=-1, batch=''):
+        batches = self.TRAINING_BATCHES if batch == '' else {batch: self.TRAINING_BATCHES[batch]}
+        return self.load_data(batches, samples)
+
+    def load_test_data(self, samples=-1):
+        return self.load_data(self.TEST_BATCH, samples)
 
     def __load_from_pickle_file(self, pickle):
-        data, labels = self.unpickle(pickle)
+        data, labels = self.__unpickle_image_dataset(pickle)
         imageContexts = []
         for i in range(data.shape[0]):
             image = data[i, :]
             label = labels[i]
             imageContexts.append(ImageContext(pickle, i, image, label))
         return imageContexts
+
+    def pickle_obj(self, obj, file_name):
+        with open(os.path.join(ImageDataset.PRECOMUTED_DIR, file_name), 'wb') as file:
+            cPickle.dump(obj, file)
+
+    def unpickle_obj(self, file_name):
+        with open(os.path.join(ImageDataset.PRECOMUTED_DIR, file_name), 'rb') as file:
+            return cPickle.load(file)
 
 # data, labels = unpickle('data_batch_5')
 # cifar10ToImages(data, labels, 'data_batch_5')

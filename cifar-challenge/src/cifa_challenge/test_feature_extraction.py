@@ -10,17 +10,18 @@ from progress_bar import ProgressBar
 progressBar = ProgressBar()
 imageDataset = ImageDataset()
 
-nimages = 20
-imgs = imageDataset.load_training_data(nimages)
+nimages = 30
+imgs = imageDataset.load_training_data(samples=nimages)
 
 detectors = [
     ('Surf', cv2.xfeatures2d.SURF_create()),
     ('Sift', cv2.xfeatures2d.SIFT_create()),
-    ('MSER', cv2.MSER_create()),
-    ('ORB', cv2.ORB_create()),
-    ('Kaze', cv2.KAZE_create()),
+    # ('MSER', cv2.MSER_create()),
+    # ('ORB', cv2.ORB_create()),
+    # ('Kaze', cv2.KAZE_create()),
     ('AKaze', cv2.AKAZE_create()),
-    ('Dense', DenseDetector([6]))
+    ('Dense_8', DenseDetector([8], 0.3)),
+    ('Dense_12', DenseDetector([12], 0.3))
 ]
 
 plt.ioff()

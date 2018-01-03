@@ -1,10 +1,11 @@
 import cv2
-
+import numpy as np
 
 class DenseDetector:
 
-    def __init__(self, radiuses):
+    def __init__(self, radiuses, overlap):
         self._radiuses = radiuses
+        self._overlap = overlap
         self._cachedGrids = {}
 
     def detect(self, img, ignored):
@@ -14,8 +15,9 @@ class DenseDetector:
 
         kp = []
         for radius in self._radiuses:
-            for y in range(radius, img.shape[0], radius):
-                for x in range(radius, img.shape[1], radius):
+            step = int(np.math.ceil(radius * 2) * (1 - self._overlap))
+            for y in range(radius, img.shape[0], step):
+                for x in range(radius, img.shape[1], step):
                     kp.append(cv2.KeyPoint(x, y, radius * 2))
 
         self._cachedGrids[img.shape] = kp

@@ -16,3 +16,12 @@ class ImageContext:
 
     def image_path(self):
         return self.source_file + ':' + str(self.index)
+
+    def prepare_to_pickle(self):
+        self.key_points = [(point.pt, point.size, point.angle, point.response, point.octave,
+                            point.class_id) for point in self.key_points]
+
+    def unpickle(self):
+        self.key_points = [cv2.KeyPoint(x=point[0][0], y=point[0][1], _size=point[1], _angle=point[2],
+                                        _response=point[3], _octave=point[4], _class_id=point[5])
+                           for point in self.key_points]
