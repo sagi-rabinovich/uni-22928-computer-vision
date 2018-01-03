@@ -1,6 +1,7 @@
 import logging
 
 import cv2
+from memory_profiler import profile
 from sklearn import preprocessing
 
 from dense_detector import DenseDetector
@@ -13,22 +14,24 @@ class FeatureExtractor:
     def __init__(self, progressBar, min_patch_diameter=5):
         self._min_patch_diameter = min_patch_diameter
         self._detectors = [  # cv2.xfeatures2d.SIFT_create(),
-            cv2.xfeatures2d.SURF_create(),
+            # cv2.xfeatures2d.SURF_create(),
             cv2.MSER_create(),
             DenseDetector([3, 6]),
             cv2.KAZE_create()
         ]
-        self._descriptor = cv2.xfeatures2d.SIFT_create()
+        self._descriptor = cv2.xfeatures2d.SURF_create()
         self._progressBar = progressBar
         self._logger = logging.getLogger('cifar-challenge.FeatureExtractor')
 
+    @profile
     def __describe(self, imageContexts):
-        for imageContext in self._progressBar.track(imageContexts):
+        for imageContext in self._progressBar.track(imageContexts, suffix='Computing descriptors'):
             keyPoints, descriptors = self._descriptor.compute(imageContext.gray, imageContext.key_points)
             imageContext.features = preprocessing.normalize(descriptors, norm='l2')
 
+    @profile
     def extractAndCompute(self, imageContexts):
-        for imageContext in self._progressBar.track(imageContexts):
+        for imageContext in self._progressBar.track(imageContexts, suffix='Detecting key points'):
             key_points = []
             for detector in self._detectors:
                 detected_kp = detector.detect(imageContext.gray, None)

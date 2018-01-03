@@ -5,6 +5,7 @@ import sklearn
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
+from memory_profiler import profile
 from sklearn import svm
 from sklearn.neighbors import KDTree
 
@@ -15,6 +16,7 @@ class Classifier:
         self._imageContexts = None
         self._kdtree = None
 
+    @profile
     def learn(self, image_contexts):
         self._imageContexts = image_contexts
         code_vectors = [imageContext.code_vector for imageContext in image_contexts]
@@ -24,6 +26,7 @@ class Classifier:
 
         return self
 
+    @profile
     def predict(self, test_image_contexts):
         return self._svm.predict([imageContext.code_vector for imageContext in test_image_contexts])
 

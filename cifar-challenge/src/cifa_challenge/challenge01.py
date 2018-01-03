@@ -25,6 +25,7 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+
 progress_bar = ProgressBar()
 feature_extractor = FeatureExtractor(progress_bar)
 image_dataset = ImageDataset()
@@ -42,20 +43,18 @@ image_dataset = ImageDataset()
 #     imageContext.key_points = keyPointExtractor.extract(imageContext)
 #     imageContext.features = featureDescriptor.describe(imageContext)
 #     imageContexts.append(imageContext)
-
-imageContexts = image_dataset.load_training_data(samples=100, batch='data_batch_1')
-test_image_contexts = np.random.choice(image_dataset.load_test_data(), 10)
-progress_bar.prefix = 'Extracting features from training images'
+DATA_BATCH_1 = 'data_batch_1'
+imageContexts = image_dataset.load_training_data()
+test_image_contexts = image_dataset.load_test_data()
+progress_bar.prefix = 'Extracting features for training images'
 feature_extractor.extractAndCompute(imageContexts)
-progress_bar.prefix = 'Extracting features from test images'
+progress_bar.prefix = 'Extracting features for test images'
 feature_extractor.extractAndCompute(test_image_contexts)
 
 progress_bar.prefix = 'Building code book'
-code_book = CodeBook(progress_bar, imageContexts)
-progress_bar.prefix = 'Computing code vectors for training images'
-code_book.computeCodeVector(imageContexts)
+code_book = CodeBook(progress_bar).fit(imageContexts)
 progress_bar.prefix = 'Computing code vectors for test images'
-code_book.computeCodeVector(test_image_contexts)
+code_book.compute_for_test_images(test_image_contexts)
 progress_bar.prefix = 'Training classifier'
 classifier = Classifier().learn(imageContexts)
 progress_bar.prefix = 'Testing on test data'

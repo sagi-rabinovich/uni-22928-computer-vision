@@ -23,19 +23,21 @@ class ProgressBar:
         self._end = None
         self._update_after_n_intervals = 1
 
-    def track(self, items):
+    def track(self, items, suffix=''):
         total = len(items)
+        self.suffix = suffix
         self.start(total)
         for item in items:
             yield item
             self.increment()
+        self.suffix = ''
 
     def start(self, total):
-        print
         self.iteration = 0
         self.total = total
         self._start = datetime.datetime.now()
         self._update_after_n_intervals = max(total / 1000, 1)
+        print '\nStarting tracking at ' + str(self._start)
         self.update(0, total)
 
     # Print iterations progress
