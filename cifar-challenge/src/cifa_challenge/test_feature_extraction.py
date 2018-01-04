@@ -21,7 +21,6 @@ detectors = [
     # ('Kaze', cv2.KAZE_create()),
     ('AKaze', cv2.AKAZE_create()),
     ('Dense_8', DenseDetector([8], 0.3)),
-    ('Dense_12', DenseDetector([12], 0.3))
 ]
 
 plt.ioff()

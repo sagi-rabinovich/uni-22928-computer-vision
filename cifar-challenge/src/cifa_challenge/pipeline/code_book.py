@@ -13,11 +13,12 @@ from numpy import random
 from sklearn.cluster import MiniBatchKMeans
 
 from cifa_challenge.my_utils import flatmap
+from cifa_challenge.progress_bar import ProgressBar
 
 
 class CodeBook:
 
-    def __init__(self, progressBar):
+    def __init__(self, progressBar=ProgressBar(), vocabulary_size_factor=1.6):
         self.__logger = logging.getLogger('cifar-challenge.CodeBook')
         """
         _codebook : ndarray
@@ -29,14 +30,12 @@ class CodeBook:
         self.kmeans_ = None
         self.k_ = -1
         self.progressBar = progressBar
+        self.vocabulary_size_factor = vocabulary_size_factor
 
     def fit(self, descriptors, y=None):
         random.seed((1000, 2000))
-        labelCount = 10
-        # self.k_ = 4000
-        self.k_ = int(0.7 *
-                      math.ceil(
-                          labelCount * np.mean([len(img_descriptors) for img_descriptors in descriptors])))
+        self.k_ = int(
+            math.ceil(self.vocabulary_size_factor * np.mean([len(img_descriptors) for img_descriptors in descriptors])))
 
         self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, compute_labels=False, verbose=0)
 
@@ -47,6 +46,7 @@ class CodeBook:
             features = flatmap(lambda x: x, batch)
             self.kmeans_.partial_fit(features)
 
+        self.__descriptors = descriptors
         return self
 
     def transform(self, descriptors):

@@ -18,8 +18,10 @@ class ColorSpaceTransformer(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, images):
-        return self._transformer(images)
+    def transform(self, images_with_kps):
+        images = images_with_kps[0]
+        kps = images_with_kps[1]
+        return self._transformer(images), kps
 
     def _grayscale(self, images):
         return [x.gray for x in images]
@@ -35,6 +37,10 @@ class ColorSpaceTransformer(BaseEstimator, TransformerMixin):
             m = mean[i]
             s = std[i]
             normalized_img = np.divide(np.subtract(color_img, m), s)
+            max_c = np.max(normalized_img, (0, 1))
+            min_c = np.min(normalized_img, (0, 1))
+            normalized_img = np.multiply(np.divide(np.subtract(normalized_img, min_c), np.subtract(max_c, min_c)),
+                                         255).astype('uint8')
             result.append(normalized_img)
         np.seterr(**old_err_state)
         return result

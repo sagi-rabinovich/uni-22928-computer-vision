@@ -34,17 +34,18 @@ class DenseDetector(BaseEstimator, TransformerMixin):
             kps.append(self.__detect(im))
         return images, kps
 
-    def __detect(self, img):
-        kp = self._cachedGrids.get(img.shape)
+    def __detect(self, img_ctx):
+        img_shape = img_ctx.gray.shape
+        kp = self._cachedGrids.get(img_shape)
         if kp is not None:
             return kp
 
         kp = []
         for radius in self.radiuses:
             step = int(np.math.ceil(radius * 2) * (1 - self.overlap))
-            for y in range(radius, img.shape[0], step):
-                for x in range(radius, img.shape[1], step):
+            for y in range(radius, img_shape[0], step):
+                for x in range(radius, img_shape[1], step):
                     kp.append(cv2.KeyPoint(x, y, radius * 2))
 
-        self._cachedGrids[img.shape] = kp
+        self._cachedGrids[img_shape] = kp
         return kp
