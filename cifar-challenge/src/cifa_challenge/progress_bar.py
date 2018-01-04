@@ -27,13 +27,13 @@ class ProgressBar:
 
     def track(self, items, suffix=''):
         total = len(items)
-        self.suffix = suffix
+        if suffix != '':
+            self.suffix = suffix
         self.start(total)
         for item in items:
             yield item
             self.increment()
         self.suffix = ''
-
 
     def start(self, total):
         self.iteration = 0
@@ -74,4 +74,3 @@ class ProgressBar:
     def done(self):
         self.iteration = self.total
         self.update(self.iteration, self.total)
-

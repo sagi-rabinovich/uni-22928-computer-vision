@@ -1,7 +1,5 @@
-import logging
-
+from cifa_challenge.pipeline.code_book import CodeBook
 from classifier import Classifier
-from code_book import CodeBook
 from feature_extractor import FeatureExtractor
 from image_dataset import ImageDataset
 from progress_bar import ProgressBar
@@ -27,22 +25,6 @@ def unpickle_results(file_name):
         yy.unpickle()
     return X, Y
 
-
-# Logging
-# create logger with 'spam_application'
-logger = logging.getLogger('cifar-challenge')
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('../../main.log')
-fh.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-logger.addHandler(fh)
-logger.addHandler(ch)
-
-logger.info('Starting challenge')
 progress_bar = ProgressBar()
 feature_extractor = FeatureExtractor(progress_bar)
 image_dataset = ImageDataset()

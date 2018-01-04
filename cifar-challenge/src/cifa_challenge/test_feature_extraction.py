@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
 
-from dense_detector import DenseDetector
+from cifa_challenge.pipeline.dense_detector import DenseDetector
 from image_dataset import ImageDataset
 from progress_bar import ProgressBar
 

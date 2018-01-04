@@ -1,4 +1,4 @@
-from code_book import CodeBook
+from cifa_challenge.pipeline.code_book import CodeBook
 from feature_extractor import FeatureExtractor
 from image_dataset import ImageDataset
 from progress_bar import ProgressBar
