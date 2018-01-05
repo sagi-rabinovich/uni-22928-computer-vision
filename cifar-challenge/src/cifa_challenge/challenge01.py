@@ -1,7 +1,8 @@
-from cifa_challenge.pipeline.code_book import CodeBook
-from classifier import Classifier
 from feature_extractor import FeatureExtractor
+
+from classifier import Classifier
 from image_dataset import ImageDataset
+from pipeline.code_book import CodeBook
 from progress_bar import ProgressBar
 
 

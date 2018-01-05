@@ -6,14 +6,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+from my_utils import flatmap
 from numpy import random
+from progress_bar import ProgressBar
 # from scipy.cluster.vq import kmeans
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
 from sklearn.cluster import MiniBatchKMeans
-
-from cifa_challenge.my_utils import flatmap
-from cifa_challenge.progress_bar import ProgressBar
 
 
 class CodeBook:
@@ -32,33 +31,35 @@ class CodeBook:
         self.progressBar = progressBar
         self.vocabulary_size_factor = vocabulary_size_factor
 
-    def fit(self, descriptors, y=None):
+    def fit(self, images_with_descriptors, y=None):
+        descriptors = images_with_descriptors[1]
         random.seed((1000, 2000))
         self.k_ = int(
             math.ceil(self.vocabulary_size_factor * np.mean([len(img_descriptors) for img_descriptors in descriptors])))
 
-        self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, compute_labels=False, verbose=0)
+        self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, batch_size=500, compute_labels=False, verbose=0)
 
-        split = len(descriptors) / 5000 + 1
+        split = max(len(descriptors) / 1000, 1)
         self.__logger.info('Building code book [k=' + str(self.k_) + ', split=' + str(split) + ']')
         self.progressBar.suffix = 'Building code book'
         for batch in self.progressBar.track(np.array_split(descriptors, split)):
             features = flatmap(lambda x: x, batch)
             self.kmeans_.partial_fit(features)
 
-        self.__descriptors = descriptors
         return self
 
-    def transform(self, descriptors):
+    def transform(self, images_with_descriptors):
+        descriptors = images_with_descriptors[1]
         self.progressBar.suffix = 'Transforming descriptors'
         code_vectors = []
         for img_descriptors in self.progressBar.track(descriptors):
             # todo try to run pca on features before codebooking
-            quantized_descriptors = self.kmeans_.predict(img_descriptors)
-            counter = collections.Counter(quantized_descriptors)
             code_vector = np.zeros(self.k_, dtype=float)
-            for code in counter.keys():
-                code_vector[code] = counter[code]
+            if len(img_descriptors) != 0:
+                quantized_descriptors = self.kmeans_.predict(img_descriptors)
+                counter = collections.Counter(quantized_descriptors)
+                for code in counter.keys():
+                    code_vector[code] = counter[code]
             code_vectors.append(code_vector)
         return code_vectors
 

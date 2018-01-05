@@ -1,9 +1,10 @@
+import sys
+
 import cv2
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
 
-from cifa_challenge.pipeline.dense_detector import DenseDetector
 from image_dataset import ImageDataset
 from progress_bar import ProgressBar
 
@@ -12,19 +13,20 @@ imageDataset = ImageDataset()
 
 nimages = 30
 imgs = imageDataset.load_training_data(samples=nimages)
-
 detectors = [
-    ('Surf', cv2.xfeatures2d.SURF_create()),
     ('Sift', cv2.xfeatures2d.SIFT_create()),
-    # ('MSER', cv2.MSER_create()),
+    ('Surf', cv2.xfeatures2d.SURF_create(hessianThreshold=300)),
+    ('Star', cv2.xfeatures2d.StarDetector_create()),
+    ('Brisk', cv2.BRISK_create()),
+    ('MSER', cv2.MSER_create()),
     # ('ORB', cv2.ORB_create()),
-    # ('Kaze', cv2.KAZE_create()),
-    ('AKaze', cv2.AKAZE_create()),
-    ('Dense_8', DenseDetector([8], 0.3)),
+    ('Kaze', cv2.KAZE_create()),
+    ('Kaze_o8', cv2.KAZE_create(nOctaves=8)),
+    # ('AKaze', cv2.AKAZE_create())
 ]
 
 plt.ioff()
-figure = Figure(figsize=(10, 10))
+figure = Figure(figsize=(30, 30))
 canvas = FigureCanvas(figure)
 
 
@@ -49,14 +51,15 @@ for im_i in range(len(imgs)):
     for detector_idx in range(len(detectors)):
         detector = detectors[detector_idx][1]
         detector_name = detectors[detector_idx][0]
-        kp = detector.detect(im.gray, None)
-
-        im_with_kp = drawKeyPoints(im.original, im.gray, kp)
-
-        ax = figure.add_subplot(nimages, cols, (im_i * cols) + detector_idx + 3)
-        ax.set_axis_off()
-        ax.imshow(im_with_kp, interpolation='nearest')
-        if im_i == 0:
-            ax.set_title(detector_name)
+        try:
+            kp = detector.detect(im.gray, None)
+            im_with_kp = drawKeyPoints(im.original, im.gray, kp)
+            ax = figure.add_subplot(nimages, cols, (im_i * cols) + detector_idx + 3)
+            ax.set_axis_off()
+            ax.imshow(im_with_kp, interpolation='nearest')
+            if im_i == 0:
+                ax.set_title(detector_name)
+        except:
+            print "Unexpected error with detector: ", detector_name, sys.exc_info()[0]
 
 canvas.print_figure('../../results/feature_extraction_compare.png')

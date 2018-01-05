@@ -1,8 +1,9 @@
 import cv2
+import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator
 
-from cifa_challenge.pipeline.color_descriptor import ColorSiftDescriptor, ColorSurfDescriptor
 from cifa_challenge.progress_bar import ProgressBar
+from color_descriptor import ColorSiftDescriptor, ColorSurfDescriptor
 
 
 class FeatureDescriptor(BaseEstimator, TransformerMixin):
@@ -16,6 +17,8 @@ class FeatureDescriptor(BaseEstimator, TransformerMixin):
             self.descriptor_ = cv2.xfeatures2d.SURF_create()
         elif self.descriptor == 'sift':
             self.descriptor_ = cv2.xfeatures2d.SIFT_create()
+        elif self.descriptor == 'kaze':
+            self.descriptor_ = cv2.KAZE_create()
         elif self.descriptor == 'color-sift':
             self.descriptor_ = ColorSiftDescriptor()
         elif self.descriptor == 'color-surf':
@@ -32,6 +35,8 @@ class FeatureDescriptor(BaseEstimator, TransformerMixin):
         i = 0
         for img in self.progressBar.track(images):
             img_key_points, img_descriptors = self.descriptor_.compute(img, kps[i])
+            if img_descriptors is None:
+                img_descriptors = np.empty(0)
             descriptors.append(img_descriptors)
             i += 1
-        return descriptors
+        return images, descriptors

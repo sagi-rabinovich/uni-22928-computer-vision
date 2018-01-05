@@ -10,9 +10,13 @@ class PerColorChannelDescriptor(object):
         if len(image.shape) != 3 or image.shape[2] < 2:
             raise RuntimeError(
                 'image should be a 3D Array of shape (height, width, nchannels] where nchannels >= 2')
+        if kp is None or len(kp) == 0:
+            return kp, None
+
         descriptors_by_channel = []
         for i in range(image.shape[2]):
             ignore, desc = self.descriptor_.compute(image[:, :, i], kp)
+
             descriptors_by_channel.append(desc)
         return kp, np.concatenate(descriptors_by_channel, axis=1)
 

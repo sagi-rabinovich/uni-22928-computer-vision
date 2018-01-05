@@ -1,6 +1,7 @@
-from cifa_challenge.pipeline.code_book import CodeBook
 from feature_extractor import FeatureExtractor
+
 from image_dataset import ImageDataset
+from pipeline.code_book import CodeBook
 from progress_bar import ProgressBar
 
 progressBar = ProgressBar()

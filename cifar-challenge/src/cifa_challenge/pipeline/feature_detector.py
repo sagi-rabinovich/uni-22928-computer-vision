@@ -25,6 +25,6 @@ class FeatureDetector(BaseEstimator, TransformerMixin):
     def transform(self, images):
         kps = []
         for img in self.progressBar.track(images):
-            img_key_points = self.detector_.detect(img.gray)
+            img_key_points = self.detector_.detect(img)
             kps.append(img_key_points)
         return images, kps

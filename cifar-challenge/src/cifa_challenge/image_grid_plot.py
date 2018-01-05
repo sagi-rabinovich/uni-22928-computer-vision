@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_template import FigureCanvas
@@ -19,4 +21,4 @@ def plot_image_grid(img_grid, grid_shape, file_name, normalize=False):
             ax.set_axis_off()
             ax.imshow(img, interpolation='nearest')
 
-    canvas.print_figure(file_name)
+    canvas.print_figure(os.path.join('../../results/', file_name))

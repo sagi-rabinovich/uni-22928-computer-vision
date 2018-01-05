@@ -18,10 +18,8 @@ class ColorSpaceTransformer(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, images_with_kps):
-        images = images_with_kps[0]
-        kps = images_with_kps[1]
-        return self._transformer(images), kps
+    def transform(self, images):
+        return self._transformer(images)
 
     def _grayscale(self, images):
         return [x.gray for x in images]

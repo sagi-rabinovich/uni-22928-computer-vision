@@ -34,8 +34,8 @@ class DenseDetector(BaseEstimator, TransformerMixin):
             kps.append(self.__detect(im))
         return images, kps
 
-    def __detect(self, img_ctx):
-        img_shape = img_ctx.gray.shape
+    def __detect(self, img):
+        img_shape = img.shape
         kp = self._cachedGrids.get(img_shape)
         if kp is not None:
             return kp
