@@ -34,12 +34,14 @@ class CodeBook:
     def fit(self, images_with_descriptors, y=None):
         descriptors = images_with_descriptors[1]
         random.seed((1000, 2000))
-        self.k_ = int(
-            math.ceil(self.vocabulary_size_factor * np.mean([len(img_descriptors) for img_descriptors in descriptors])))
 
+        average_descriptor_count_per_img = np.mean([len(img_descriptors) for img_descriptors in descriptors])
+        self.k_ = int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
+
+        approximate_batch_size = 10000
+        image_count = len(descriptors)
+        split = max(int(image_count * average_descriptor_count_per_img / approximate_batch_size), 1)
         self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, batch_size=500, compute_labels=False, verbose=0)
-
-        split = max(len(descriptors) / 1000, 1)
         self.__logger.info('Building code book [k=' + str(self.k_) + ', split=' + str(split) + ']')
         self.progressBar.suffix = 'Building code book'
         for batch in self.progressBar.track(np.array_split(descriptors, split)):
