@@ -62,7 +62,16 @@ class ImageDataset:
             image_ctx.extend(loaded)
 
         if samples > 0:
-            image_ctx = np.random.choice(image_ctx, samples)
+            samples_per_class = max(samples / len(self.CIFAR_10_LABELS), 1)
+            chosen = []
+            for label in range(len(self.CIFAR_10_LABELS)):
+                images_of_label = [img for img in image_ctx if img.label == label]
+                #                choice = np.random.choice(images_of_label, samples_per_class)
+                choice = images_of_label[:samples_per_class]
+                if len(choice) < samples_per_class:
+                    raise RuntimeError('Could not get enough samples of class ' + label)
+                chosen.extend(choice)
+            image_ctx = chosen
         return image_ctx
 
     def load_training_data(self, samples=-1, batch=''):

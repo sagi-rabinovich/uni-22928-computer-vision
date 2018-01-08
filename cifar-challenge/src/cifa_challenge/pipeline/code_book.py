@@ -6,13 +6,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
-from my_utils import flatmap
 from numpy import random
-from progress_bar import ProgressBar
 # from scipy.cluster.vq import kmeans
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
 from sklearn.cluster import MiniBatchKMeans
+
+from cifa_challenge.my_utils import flatmap
+from cifa_challenge.progress_bar import ProgressBar
 
 
 class CodeBook:
@@ -35,9 +36,12 @@ class CodeBook:
         descriptors = images_with_descriptors[1]
         random.seed((1000, 2000))
 
-        average_descriptor_count_per_img = np.mean([len(img_descriptors) for img_descriptors in descriptors])
+        flat_descriptors = [len(img_descriptors) for img_descriptors in descriptors]
+        average_descriptor_count_per_img = np.mean(flat_descriptors)
+        total_descriptors = np.sum(flat_descriptors)
         self.k_ = int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
-
+        if self.k_ > total_descriptors:
+            self.k_ = total_descriptors
         approximate_batch_size = 10000
         image_count = len(descriptors)
         split = max(int(image_count * average_descriptor_count_per_img / approximate_batch_size), 1)

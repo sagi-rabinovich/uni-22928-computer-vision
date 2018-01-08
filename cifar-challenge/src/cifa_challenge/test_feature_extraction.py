@@ -12,7 +12,7 @@ progressBar = ProgressBar()
 imageDataset = ImageDataset()
 
 nimages = 30
-imgs = imageDataset.load_training_data(samples=nimages)
+imgs = imageDataset.load_training_data(batch='data_batch_1')[:nimages]
 detectors = [
     ('Sift', cv2.xfeatures2d.SIFT_create()),
     ('Surf', cv2.xfeatures2d.SURF_create(hessianThreshold=300)),
@@ -52,8 +52,9 @@ for im_i in range(len(imgs)):
         detector = detectors[detector_idx][1]
         detector_name = detectors[detector_idx][0]
         try:
-            kp = detector.detect(im.gray, None)
-            im_with_kp = drawKeyPoints(im.original, im.gray, kp)
+            img_eq = im.gray  # cv2.equalizeHist(im.gray)
+            kp = detector.detect(img_eq, None)
+            im_with_kp = drawKeyPoints(im.original, img_eq, kp)
             ax = figure.add_subplot(nimages, cols, (im_i * cols) + detector_idx + 3)
             ax.set_axis_off()
             ax.imshow(im_with_kp, interpolation='nearest')

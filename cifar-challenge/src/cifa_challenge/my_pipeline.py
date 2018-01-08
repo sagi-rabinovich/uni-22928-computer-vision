@@ -9,9 +9,11 @@ from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
 from sklearn import svm
 from sklearn.decomposition import PCA
+from sklearn.grid_search import GridSearchCV
 from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.preprocessing import StandardScaler, FunctionTransformer
+from sklearn.preprocessing import StandardScaler, FunctionTransformer, Normalizer
 
+from cifa_challenge.pipeline.keypoint_union import KeypointUnion
 from image_dataset import ImageDataset
 from image_grid_plot import plot_image_grid
 from pipeline.code_book import CodeBook
@@ -28,11 +30,22 @@ def execute_pipeline():
 
     LABEL_COUNT = len(image_dataset.CIFAR_10_LABELS)
     DATA_BATCH_1 = 'data_batch_1'
-    image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1)
-    test_image_contexts = image_dataset.load_test_data()
+    samples = -1  # 100
+
+    image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1, samples=samples)
+    test_image_contexts = image_dataset.load_test_data(samples=samples)
+    logger = logging.getLogger('cifar-challenge.Pipeline')
+
+    def extractLabels(imgs, repeat):
+        labels = []
+        for i in range(repeat):
+            for x in imgs:
+                labels.append(x.label)
+        return labels
 
     def _pipeline():
-        logger = logging.getLogger('cifar-challenge.Pipeline')
+        keypoint_detector_bar = ProgressBar()
+        keypoint_detector_bar.prefix = 'Detecting keypoints'
         descriptor_compute_bar = ProgressBar()
         descriptor_compute_bar.prefix = 'Computing descriptor'
         codeBookBar = ProgressBar()
@@ -112,16 +125,25 @@ def execute_pipeline():
                              ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
 
         def color_dense_descriptor_pipeline():
+            def power_transform(X, alpha):
+                return np.multiply(np.sign(X), np.power(np.abs(X), 2))
+
             return Pipeline(
                 [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
                  #   ("smoothing", BilateralFilter()),
-                 ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12, 16], overlap=0.3)),
+                 # ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12], overlap=0.3)),
+                 ("keypoint_detectors", KeypointUnion(ProgressBar(), [
+                     ('dense_detector', DenseDetector(radiuses=[3, 6], overlap=0.3)),
+                     ("sift_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='sift')),
+                     ("surf_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='surf'))]
+                                                      )),
                  ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-surf')),
                  ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
+                 ("l2_normalization", Normalizer(norm='l2', copy=False)),
+                 # ("power_normalization", FunctionTransformer(power_transform, kw_args={'alpha': 0.5})),
                  ("normalization", StandardScaler(copy=False)),
                  ("dim_reduction", PCA(0.75)),
                  ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
-
         # pipeline = Pipeline([("feature_extraction", FeatureUnion([
         #     ("sift_surf", Pipeline([("sift_detector", FeatureDetector(detector='sift')),
         #                             ("grayscale_transform", ColorSpaceTransformer(transformation='grayscale')),
@@ -142,29 +164,97 @@ def execute_pipeline():
         #                      ("normalization", StandardScaler(copy=False)),
         #                      ("dim_reduction", PCA(0.75)),
         #                      ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
+        def testing():
+            return Pipeline(
+                [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+                 #   ("smoothing", BilateralFilter()),
+                 ("detector", FeatureDetector(keypoint_detector_bar, 'sift')),
+                 ("descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
+                 ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
+                 ("normalization", StandardScaler(copy=False)),
+                 ("dim_reduction", PCA(0.85)),
+                 ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
 
         pipeline = color_dense_descriptor_pipeline()
-
-        def extractLabels(imgs, repeat):
-            labels = []
-            for i in range(repeat):
-                for x in imgs:
-                    labels.append(x.label)
-            return labels
 
         pipeline = pipeline.fit(image_contexts, extractLabels(image_contexts, 1))
         logger.info('Computing score')
         score = pipeline.score(test_image_contexts, extractLabels(test_image_contexts, 1))
+        logger.info('Score: ' + str(score))
 
         logger.info('Making predictions')
         predict = pipeline.predict(test_image_contexts)
         logger.info('Computing confusion matrix')
         plot_confusion_matrix(test_image_contexts, predict,
                               image_dataset.CIFAR_10_LABELS)
-        logger.info('Score: ' + str(score))
 
     def _grid_search():
-        pass
+        pipeline = Pipeline(
+            [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+             #   ("smoothing", BilateralFilter()),
+             # ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12], overlap=0.3)),
+             ("keypoint_detectors", KeypointUnion(ProgressBar(), [
+                 # ('dense_detector', DenseDetector(radiuses=[3, 6], overlap=0.3)),
+                 ("sift_detector", FeatureDetector(detector='sift')),
+                 ("surf_detector", FeatureDetector(detector='surf'))]
+                                                  )),
+             ("surf_descriptor", FeatureDescriptor(ProgressBar(), descriptor='color-surf')),
+             ("code_book", CodeBook(ProgressBar(), vocabulary_size_factor=LABEL_COUNT * 3)),
+             ("l2_normalization", Normalizer(norm='l2', copy=False)),
+             # ("power_normalization", FunctionTransformer(power_transform, kw_args={'alpha': 0.5})),
+             ("normalization", StandardScaler(copy=False)),
+             ("dim_reduction", PCA(n_components=0.75)),
+             ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
+
+        param_grid = {
+            # 'keypoint_detectors__dense_detector__overlap': [0, 0.3],
+            #     'code_book__vocabulary_size_factor':[LABEL_COUNT * 1.7, LABEL_COUNT * 2, LABEL_COUNT * 2.5, LABEL_COUNT * 3]
+            #     'dim_reduction__n_components': [0.75, 0.8, 0.85, 0.9],
+            'classification__C': [0.1, 1, 10, 100, 200, 300],
+            'classification__gamma': [0.001, 0.0001, 0.00001]}
+        gridSearch = GridSearchCV(pipeline, param_grid, n_jobs=4, verbose=10)
+        gridSearch.fit(image_contexts, extractLabels(image_contexts, 1))
+        print(gridSearch.cv_results_)
+
+    def _my_grid_search():
+        pipeline = Pipeline(
+            [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+             #   ("smoothing", BilateralFilter()),
+             # ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12], overlap=0.3)),
+             ("keypoint_detectors", KeypointUnion(ProgressBar(), [
+                 # ('dense_detector', DenseDetector(radiuses=[3, 6], overlap=0.3)),
+                 ("sift_detector", FeatureDetector(detector='sift')),
+                 ("surf_detector", FeatureDetector(detector='surf'))]
+                                                  )),
+             ("surf_descriptor", FeatureDescriptor(ProgressBar(), descriptor='color-surf')),
+             ("code_book", CodeBook(ProgressBar(), vocabulary_size_factor=LABEL_COUNT * 3)),
+             ("l2_normalization", Normalizer(norm='l2', copy=False)),
+             # ("power_normalization", FunctionTransformer(power_transform, kw_args={'alpha': 0.5})),
+             ("normalization", StandardScaler(copy=False)),
+             ("dim_reduction", PCA(n_components=0.75))])
+        truth = extractLabels(image_contexts, 1)
+        pipeline = pipeline.fit(image_contexts, truth)
+        features = pipeline.transform(image_contexts)
+        test_features = pipeline.transform(test_image_contexts)
+
+        param_grid = {
+            # 'keypoint_detectors__dense_detector__overlap': [0, 0.3],
+            #     'code_book__vocabulary_size_factor':[LABEL_COUNT * 1.7, LABEL_COUNT * 2, LABEL_COUNT * 2.5, LABEL_COUNT * 3]
+            #     'dim_reduction__n_components': [0.75, 0.8, 0.85, 0.9],
+            'c': [0.1, 1, 10, 100, 200, 300],
+            'gamma': [0.001, 0.0001, 0.00001]}
+        scores = []
+        for c in param_grid['c']:
+            for gamma in param_grid['gamma']:
+                classPipeline = Pipeline([("classification",
+                                           svm.SVC(decision_function_shape='ovr', C=c, gamma=gamma, cache_size=2000,
+                                                   verbose=False))])
+                score = classPipeline.fit(features, truth).score(test_features, extractLabels(test_image_contexts, 1))
+                score = 'c:' + str(c) + '\t\tgamma:' + str(gamma) + '\t\tscore:' + str(score)
+                print('@@ score: ' + score)
+                scores.append(score)
+        for score in scores:
+            logger.info(score)
 
     def test_1():
         pipeline = Pipeline(
@@ -181,7 +271,8 @@ def execute_pipeline():
         ct.fit(x).transform(x)
 
     # test_1()
-    _pipeline()
+    # _pipeline()
+    _my_grid_search()
 
 
 def plot_confusion_matrix(test_image_contexts, predictions, classes,
