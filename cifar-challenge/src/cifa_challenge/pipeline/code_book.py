@@ -1,4 +1,3 @@
-import logging
 import math
 
 import numpy as np
@@ -12,6 +11,7 @@ from numpy import random
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.decomposition import SparseCoder
 
+from cifa_challenge.my_logger import MyLogger
 from cifa_challenge.my_utils import flatmap
 from cifa_challenge.progress_bar import ProgressBar
 
@@ -19,7 +19,7 @@ from cifa_challenge.progress_bar import ProgressBar
 class CodeBook:
 
     def __init__(self, progressBar=ProgressBar(), vocabulary_size_factor=1.6):
-        self.__logger = logging.getLogger('cifar-challenge.CodeBook')
+        self.__logger = MyLogger.getLogger('cifar-challenge.CodeBook')
         """
         _codebook : ndarray
            A k by N array of k centroids. The i'th centroid
@@ -39,7 +39,7 @@ class CodeBook:
         flat_descriptors = [len(img_descriptors) for img_descriptors in descriptors]
         average_descriptor_count_per_img = np.mean(flat_descriptors)
         total_descriptors = np.sum(flat_descriptors)
-        self.k_ = 2000  # int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
+        self.k_ = int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
         if self.k_ > total_descriptors:
             self.k_ = total_descriptors
         approximate_batch_size = 10000
@@ -47,12 +47,16 @@ class CodeBook:
         split = max(int(image_count * average_descriptor_count_per_img / approximate_batch_size), 1)
         self.__logger.info('Building code book [k=' + str(self.k_) + ', split=' + str(split) + ']')
         self.progressBar.suffix = 'Building code book'
+
+        ## Dicionary Learning
         # self.kmeans_ = DictionaryLearning(n_components=self.k_, max_iter=100, tol=1e-3,
         #                                   n_jobs=1, transform_algorithm='threshold')
         #
         # features = flatmap(lambda x: x, descriptors)
         # self.kmeans_.fit(features)
         # dictionary = self.kmeans_.components_
+
+        ## KMeans
         self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, max_iter=100, batch_size=approximate_batch_size,
                                        tol=1e-3)
 
@@ -60,7 +64,16 @@ class CodeBook:
             features = flatmap(lambda x: x, batch)
             self.kmeans_.partial_fit(features)
         dictionary = self.kmeans_.cluster_centers_
-        self.coder_ = SparseCoder(dictionary, transform_algorithm='threshold', transform_alpha=0.1).fit(features)
+
+        # features = flatmap(lambda x: x, descriptors)
+        # precompute_distances = len(features)*self.k_ < 12e6*10
+        # self.__logger.info('Precomputing distances: ' + str(precompute_distances))
+        # self.kmeans_ = KMeans(n_clusters=self.k_, max_iter=150, tol=1e-3,
+        #                       n_jobs=4, precompute_distances=precompute_distances)
+        #
+        # self.kmeans_.fit(features)
+        # dictionary = self.kmeans_.cluster_centers_
+        self.coder_ = SparseCoder(dictionary, transform_algorithm='threshold', transform_alpha=0.01).fit(features)
         return self
 
     def transform(self, images_with_descriptors):
@@ -69,9 +82,12 @@ class CodeBook:
         code_vectors = []
 
         for img_descriptors in self.progressBar.track(descriptors):
-            code_vector = self.coder_.transform(img_descriptors)
-            code_vector = np.max(np.abs(code_vector), axis=0)
-            code_vectors.append(code_vector)
+            if img_descriptors is None or len(img_descriptors) == 0:
+                code_vectors.append(np.zeros(self.k_))
+            else:
+                code_vector = self.coder_.transform(img_descriptors)
+                code_vector = np.max(np.abs(code_vector), axis=0)
+                code_vectors.append(code_vector)
 
         return code_vectors
 

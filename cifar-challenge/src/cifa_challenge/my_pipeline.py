@@ -1,5 +1,4 @@
 import itertools
-import logging
 
 import cv2
 import numpy as np
@@ -13,6 +12,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, Normalizer
 
+from cifa_challenge.my_logger import MyLogger
 from cifa_challenge.pipeline.keypoint_union import KeypointUnion
 from image_dataset import ImageDataset
 from pipeline.code_book import CodeBook
@@ -33,7 +33,7 @@ def execute_pipeline():
 
     image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1, samples=samples)
     test_image_contexts = image_dataset.load_test_data(samples=samples)
-    logger = logging.getLogger('cifar-challenge.Pipeline')
+    logger = MyLogger.getLogger('cifar-challenge.Pipeline')
 
     def extractLabels(imgs, repeat):
         labels = []
@@ -168,9 +168,12 @@ def execute_pipeline():
                 [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
                  #   ("smoothing", BilateralFilter()),
                  ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12, 16], overlap=0.3)),
+                 # ("sift_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='sift')),
                  ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-surf')),
-                 ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 1.5)),
-                 ("normalization", StandardScaler(copy=False)),
+                 ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
+
+                 # ("l2_normalization", Normalizer(norm='l2', copy=False)),
+                 ("scaler", StandardScaler(copy=False)),
                  ("dim_reduction", PCA(0.75)),
                  ("classification",
                   svm.SVC(C=200, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])

@@ -1,13 +1,12 @@
-import logging
-
 from sklearn.base import TransformerMixin, BaseEstimator
 
+from cifa_challenge.my_logger import MyLogger
 from cifa_challenge.progress_bar import ProgressBar
 
 
 class KeypointUnion(BaseEstimator, TransformerMixin):
     def __init__(self, progressBar=ProgressBar(), keypoint_detector_list=[]):
-        self._logger = logging.getLogger('cifar-challenge.KeypointUnion')
+        self._logger = MyLogger.getLogger('cifar-challenge.KeypointUnion')
         self._progressBar = progressBar
         self.keypoint_detector_list = keypoint_detector_list
 

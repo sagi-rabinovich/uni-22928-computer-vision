@@ -1,6 +1,6 @@
-import logging
-
 from sklearn import svm
+
+from cifa_challenge.my_logger import MyLogger
 
 
 class Classifier:
@@ -9,7 +9,7 @@ class Classifier:
         # self._svm = SGDClassifier(decision_function_shape='ovr', cache_size=2000, verbose=True, n_jobs=-1)
         self._imageContexts = None
         self._kdtree = None
-        self._logger = logging.getLogger('cifar-challenge.Classifier')
+        self._logger = MyLogger.getLogger('cifar-challenge.Classifier')
 
 
     def learn(self, image_contexts):

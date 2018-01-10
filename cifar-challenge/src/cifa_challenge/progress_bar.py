@@ -1,6 +1,7 @@
 # coding=utf-8
 import datetime
-import logging
+
+from cifa_challenge.my_logger import MyLogger
 
 
 class ProgressBar:
@@ -23,7 +24,7 @@ class ProgressBar:
         self._start = None
         self._end = None
         self._update_after_n_intervals = 1
-        self._logger = logging.getLogger('cifar-challenge.ProgressBar')
+        self._logger = MyLogger.getLogger('cifar-challenge.ProgressBar')
 
     def track(self, items, suffix=''):
         total = len(items)
