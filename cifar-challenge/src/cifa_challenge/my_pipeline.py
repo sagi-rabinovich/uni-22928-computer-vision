@@ -9,13 +9,12 @@ from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
 from sklearn import svm
 from sklearn.decomposition import PCA
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, Normalizer
 
 from cifa_challenge.pipeline.keypoint_union import KeypointUnion
 from image_dataset import ImageDataset
-from image_grid_plot import plot_image_grid
 from pipeline.code_book import CodeBook
 from pipeline.color_space_transformer import ColorSpaceTransformer
 from pipeline.dense_detector import DenseDetector
@@ -116,7 +115,7 @@ def execute_pipeline():
 
         def dense_descriptor_pipeline():
             return Pipeline([("grayscale_transform", ColorSpaceTransformer(transformation='grayscale')),
-                             ("smoothing", FunctionTransformer(lambda X: cv2.bilateralFilter(x.original, 4, 100, 100))),
+                             ("smoothing", FunctionTransformer(lambda X: cv2.bilateralFilter(X.original, 4, 100, 100))),
                              ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12, 16], overlap=0.3)),
                              ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'surf')),
                              ("code_book", CodeBook(LABEL_COUNT * 1.5)),
@@ -168,14 +167,15 @@ def execute_pipeline():
             return Pipeline(
                 [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
                  #   ("smoothing", BilateralFilter()),
-                 ("detector", FeatureDetector(keypoint_detector_bar, 'sift')),
-                 ("descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
-                 ("code_book", CodeBook(LABEL_COUNT * 3)),
+                 ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12, 16], overlap=0.3)),
+                 ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-surf')),
+                 ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 1.5)),
                  ("normalization", StandardScaler(copy=False)),
-                 ("dim_reduction", PCA(0.85)),
-                 ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
+                 ("dim_reduction", PCA(0.75)),
+                 ("classification",
+                  svm.SVC(C=200, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
 
-        pipeline = color_dense_descriptor_pipeline()
+        pipeline = testing()
 
         pipeline = pipeline.fit(image_contexts, extractLabels(image_contexts, 1))
         logger.info('Computing score')
@@ -256,23 +256,8 @@ def execute_pipeline():
         for score in scores:
             logger.info(score)
 
-    def test_1():
-        pipeline = Pipeline(
-            [("color_space_transformer", ColorSpaceTransformer(transformation='transformed_color_distribution'))])
-        images, kps = pipeline.fit_transform((image_contexts, []), None)
-
-        img_grid = [images]
-        plot_image_grid(img_grid, (1, len(images)), '../../results/transformed_color_space.png')
-        print('Done')
-
-    def test_2():
-        ct = ColorSpaceTransformer(transformation='transformed_color_distribution')
-        x = (image_contexts, [])
-        ct.fit(x).transform(x)
-
-    # test_1()
-    # _pipeline()
-    _my_grid_search()
+    _pipeline()
+    #_my_grid_search()
 
 
 def plot_confusion_matrix(test_image_contexts, predictions, classes,

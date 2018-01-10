@@ -1,4 +1,3 @@
-import collections
 import logging
 import math
 
@@ -11,6 +10,7 @@ from numpy import random
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
 from sklearn.cluster import MiniBatchKMeans
+from sklearn.decomposition import SparseCoder
 
 from cifa_challenge.my_utils import flatmap
 from cifa_challenge.progress_bar import ProgressBar
@@ -39,34 +39,40 @@ class CodeBook:
         flat_descriptors = [len(img_descriptors) for img_descriptors in descriptors]
         average_descriptor_count_per_img = np.mean(flat_descriptors)
         total_descriptors = np.sum(flat_descriptors)
-        self.k_ = int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
+        self.k_ = 2000  # int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
         if self.k_ > total_descriptors:
             self.k_ = total_descriptors
         approximate_batch_size = 10000
         image_count = len(descriptors)
         split = max(int(image_count * average_descriptor_count_per_img / approximate_batch_size), 1)
-        self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, batch_size=500, compute_labels=False, verbose=0)
         self.__logger.info('Building code book [k=' + str(self.k_) + ', split=' + str(split) + ']')
         self.progressBar.suffix = 'Building code book'
+        # self.kmeans_ = DictionaryLearning(n_components=self.k_, max_iter=100, tol=1e-3,
+        #                                   n_jobs=1, transform_algorithm='threshold')
+        #
+        # features = flatmap(lambda x: x, descriptors)
+        # self.kmeans_.fit(features)
+        # dictionary = self.kmeans_.components_
+        self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, max_iter=100, batch_size=approximate_batch_size,
+                                       tol=1e-3)
+
         for batch in self.progressBar.track(np.array_split(descriptors, split)):
             features = flatmap(lambda x: x, batch)
             self.kmeans_.partial_fit(features)
-
+        dictionary = self.kmeans_.cluster_centers_
+        self.coder_ = SparseCoder(dictionary, transform_algorithm='threshold', transform_alpha=0.1).fit(features)
         return self
 
     def transform(self, images_with_descriptors):
         descriptors = images_with_descriptors[1]
         self.progressBar.suffix = 'Transforming descriptors'
         code_vectors = []
+
         for img_descriptors in self.progressBar.track(descriptors):
-            # todo try to run pca on features before codebooking
-            code_vector = np.zeros(self.k_, dtype=float)
-            if len(img_descriptors) != 0:
-                quantized_descriptors = self.kmeans_.predict(img_descriptors)
-                counter = collections.Counter(quantized_descriptors)
-                for code in counter.keys():
-                    code_vector[code] = counter[code]
+            code_vector = self.coder_.transform(img_descriptors)
+            code_vector = np.max(np.abs(code_vector), axis=0)
             code_vectors.append(code_vector)
+
         return code_vectors
 
     def printExampleCodes(self, image_contexts, sample_codes_count, samples_images_per_code):
