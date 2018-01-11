@@ -47,6 +47,9 @@ class ProgressBar:
 
     # Print iterations progress
     def update(self, iteration, total):
+        if MyLogger.PICKLE_COMPATABILITY:
+            return
+
         """
         Call in a loop to create terminal progress bar
         @params:

@@ -8,24 +8,25 @@ from color_descriptor import ColorSiftDescriptor, ColorSurfDescriptor
 
 class FeatureDescriptor(BaseEstimator, TransformerMixin):
     def __init__(self, progressBar=ProgressBar(), descriptor='surf'):
-        self.descriptor_ = None
         self.progressBar = progressBar
         self.descriptor = descriptor
 
     def fit(self, images, y=None):
+        return self
+
+    def get_descriptor_(self):
         if self.descriptor == 'surf':
-            self.descriptor_ = cv2.xfeatures2d.SURF_create()
+            return cv2.xfeatures2d.SURF_create()
         elif self.descriptor == 'sift':
-            self.descriptor_ = cv2.xfeatures2d.SIFT_create()
+            return cv2.xfeatures2d.SIFT_create()
         elif self.descriptor == 'kaze':
-            self.descriptor_ = cv2.KAZE_create()
+            return cv2.KAZE_create()
         elif self.descriptor == 'color-sift':
-            self.descriptor_ = ColorSiftDescriptor()
+            return ColorSiftDescriptor()
         elif self.descriptor == 'color-surf':
-            self.descriptor_ = ColorSurfDescriptor()
+            return ColorSurfDescriptor()
         else:
             raise RuntimeError('Unknown descriptor: ' + str(self.descriptor))
-        return self
 
     def transform(self, X):
         images = X[0]
@@ -33,8 +34,9 @@ class FeatureDescriptor(BaseEstimator, TransformerMixin):
         descriptors = []
 
         i = 0
+        descriptor = self.get_descriptor_()
         for img in self.progressBar.track(images):
-            img_key_points, img_descriptors = self.descriptor_.compute(img, kps[i])
+            img_key_points, img_descriptors = descriptor.compute(img, kps[i])
             if img_descriptors is None:
                 img_descriptors = np.empty(0)
             descriptors.append(img_descriptors)

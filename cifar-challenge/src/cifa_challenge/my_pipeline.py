@@ -29,7 +29,7 @@ def execute_pipeline():
 
     LABEL_COUNT = len(image_dataset.CIFAR_10_LABELS)
     DATA_BATCH_1 = 'data_batch_1'
-    samples = -1  # 100
+    samples = 5000
 
     image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1, samples=samples)
     test_image_contexts = image_dataset.load_test_data(samples=samples)
@@ -143,6 +143,7 @@ def execute_pipeline():
                  ("normalization", StandardScaler(copy=False)),
                  ("dim_reduction", PCA(0.75)),
                  ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
+
         # pipeline = Pipeline([("feature_extraction", FeatureUnion([
         #     ("sift_surf", Pipeline([("sift_detector", FeatureDetector(detector='sift')),
         #                             ("grayscale_transform", ColorSpaceTransformer(transformation='grayscale')),
@@ -167,14 +168,14 @@ def execute_pipeline():
             return Pipeline(
                 [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
                  #   ("smoothing", BilateralFilter()),
-                 ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12, 16], overlap=0.3)),
+                 ("dense_detector", DenseDetector(radiuses=[3, 6, 12, 16], overlap=0.3)),
                  # ("sift_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='sift')),
                  ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-surf')),
                  ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
 
                  # ("l2_normalization", Normalizer(norm='l2', copy=False)),
                  ("scaler", StandardScaler(copy=False)),
-                 ("dim_reduction", PCA(0.75)),
+                 ("dim_reduction", PCA(0.75, whiten=True)),
                  ("classification",
                   svm.SVC(C=200, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
 
@@ -183,7 +184,7 @@ def execute_pipeline():
         pipeline = pipeline.fit(image_contexts, extractLabels(image_contexts, 1))
         logger.info('Computing score')
         score = pipeline.score(test_image_contexts, extractLabels(test_image_contexts, 1))
-        logger.info('Score: ' + str(score))
+        print('Score: ' + str(score))
 
         logger.info('Making predictions')
         predict = pipeline.predict(test_image_contexts)
@@ -193,31 +194,30 @@ def execute_pipeline():
 
     def _grid_search():
         pipeline = Pipeline(
-            [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+            [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution'),),
              #   ("smoothing", BilateralFilter()),
-             # ("dense_detector", DenseDetector(radiuses=[3, 6, 8, 12], overlap=0.3)),
-             ("keypoint_detectors", KeypointUnion(ProgressBar(), [
-                 # ('dense_detector', DenseDetector(radiuses=[3, 6], overlap=0.3)),
-                 ("sift_detector", FeatureDetector(detector='sift')),
-                 ("surf_detector", FeatureDetector(detector='surf'))]
-                                                  )),
+             ("dense_detector", DenseDetector(radiuses=[3, 6, 12, 16], overlap=0.3)),
              ("surf_descriptor", FeatureDescriptor(ProgressBar(), descriptor='color-surf')),
              ("code_book", CodeBook(vocabulary_size_factor=LABEL_COUNT * 3)),
-             ("l2_normalization", Normalizer(norm='l2', copy=False)),
-             # ("power_normalization", FunctionTransformer(power_transform, kw_args={'alpha': 0.5})),
              ("normalization", StandardScaler(copy=False)),
-             ("dim_reduction", PCA(n_components=0.75)),
-             ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
+             ("dim_reduction", PCA(n_components=0.75, whiten=True)),
+             ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, C=300, gamma=0.00001))])
 
         param_grid = {
-            # 'keypoint_detectors__dense_detector__overlap': [0, 0.3],
-            #     'code_book__vocabulary_size_factor':[LABEL_COUNT * 1.7, LABEL_COUNT * 2, LABEL_COUNT * 2.5, LABEL_COUNT * 3]
-            #     'dim_reduction__n_components': [0.75, 0.8, 0.85, 0.9],
-            'classification__C': [0.1, 1, 10, 100, 200, 300],
-            'classification__gamma': [0.001, 0.0001, 0.00001]}
-        gridSearch = GridSearchCV(pipeline, param_grid, n_jobs=4, verbose=10)
+            # 'dense_detector__overlap': [0, 0.3],
+            'dense_detector__radiuses': [[2, 4, 8, 16], [3, 6, 12, 16]],
+            'code_book__vocabulary_size_factor': [LABEL_COUNT * 3, LABEL_COUNT * 4],
+            'dim_reduction': [None, PCA(0.75), PCA(0.87)],
+            # 'dim_reduction__n_components': [0.75, 0.85, 0.9],
+            'classification__C': [300, 500],
+            'classification__gamma': [0.00001, 0.000001]
+        }
+
+        gridSearch = GridSearchCV(pipeline, param_grid, n_jobs=1, verbose=10, refit=False, error_score=0, cv=2)
         gridSearch.fit(image_contexts, extractLabels(image_contexts, 1))
-        print(gridSearch.cv_results_)
+        print('\n\n===================\nGrid search results:')
+        print(gridSearch.best_params_)
+        print("score:" + str(gridSearch.best_score_))
 
     def _my_grid_search():
         pipeline = Pipeline(
@@ -259,8 +259,10 @@ def execute_pipeline():
         for score in scores:
             logger.info(score)
 
-    _pipeline()
-    #_my_grid_search()
+    _grid_search()
+
+    # _pipeline()
+    # _my_grid_search()
 
 
 def plot_confusion_matrix(test_image_contexts, predictions, classes,

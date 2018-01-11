@@ -9,17 +9,17 @@ class ColorSpaceTransformer(BaseEstimator, TransformerMixin):
         self._transformer = None
 
     def fit(self, images, y=None):
-        if self.transformation == 'transformed_color_distribution':
-            self._transformer = self._transformed_color_distribution
-        elif self.transformation == 'grayscale':
-            self._transformer = self._grayscale
-        else:
-            raise RuntimeError('Unknown transformation [' + str(self.transformation) + ']')
-
+        print('Fitting space')
         return self
 
     def transform(self, images):
-        return self._transformer(images)
+        print('Transforming space')
+        if self.transformation == 'transformed_color_distribution':
+            return self._transformed_color_distribution(images)
+        elif self.transformation == 'grayscale':
+            return self._grayscale(images)
+        else:
+            raise RuntimeError('Unknown transformation [' + str(self.transformation) + ']')
 
     def _grayscale(self, images):
         return [x.gray for x in images]

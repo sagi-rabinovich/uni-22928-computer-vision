@@ -8,6 +8,7 @@ from numpy import random
 # from scipy.cluster.vq import kmeans
 # from scipy.cluster.vq import whiten
 # from scipy.cluster.vq import vq
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.decomposition import SparseCoder
 
@@ -16,8 +17,7 @@ from cifa_challenge.my_utils import flatmap
 from cifa_challenge.progress_bar import ProgressBar
 
 
-class CodeBook:
-
+class CodeBook(BaseEstimator, TransformerMixin):
     def __init__(self, progressBar=ProgressBar(), vocabulary_size_factor=1.6):
         self.__logger = MyLogger.getLogger('cifar-challenge.CodeBook')
         """
@@ -48,14 +48,6 @@ class CodeBook:
         self.__logger.info('Building code book [k=' + str(self.k_) + ', split=' + str(split) + ']')
         self.progressBar.suffix = 'Building code book'
 
-        ## Dicionary Learning
-        # self.kmeans_ = DictionaryLearning(n_components=self.k_, max_iter=100, tol=1e-3,
-        #                                   n_jobs=1, transform_algorithm='threshold')
-        #
-        # features = flatmap(lambda x: x, descriptors)
-        # self.kmeans_.fit(features)
-        # dictionary = self.kmeans_.components_
-
         ## KMeans
         self.kmeans_ = MiniBatchKMeans(n_clusters=self.k_, max_iter=100, batch_size=approximate_batch_size,
                                        tol=1e-3)
@@ -65,14 +57,6 @@ class CodeBook:
             self.kmeans_.partial_fit(features)
         dictionary = self.kmeans_.cluster_centers_
 
-        # features = flatmap(lambda x: x, descriptors)
-        # precompute_distances = len(features)*self.k_ < 12e6*10
-        # self.__logger.info('Precomputing distances: ' + str(precompute_distances))
-        # self.kmeans_ = KMeans(n_clusters=self.k_, max_iter=150, tol=1e-3,
-        #                       n_jobs=4, precompute_distances=precompute_distances)
-        #
-        # self.kmeans_.fit(features)
-        # dictionary = self.kmeans_.cluster_centers_
         self.coder_ = SparseCoder(dictionary, transform_algorithm='threshold', transform_alpha=0.01).fit(features)
         return self
 

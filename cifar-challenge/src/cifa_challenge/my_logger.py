@@ -2,7 +2,7 @@ import logging
 
 
 class MyLogger:
-    PICKLE_COMPATABILITY = False
+    PICKLE_COMPATABILITY = True
 
     @staticmethod
     def getLogger(logger_name):
