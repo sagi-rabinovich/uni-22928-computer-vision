@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, Normalizer
 
 from cifa_challenge.my_logger import MyLogger
+from cifa_challenge.pipeline.bilateral_filter import BilateralFilter
 from cifa_challenge.pipeline.keypoint_union import KeypointUnion
 from image_dataset import ImageDataset
 from pipeline.code_book import CodeBook
@@ -167,17 +168,18 @@ def execute_pipeline():
         def testing():
             return Pipeline(
                 [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
-                 #   ("smoothing", BilateralFilter()),
-                 ("dense_detector", DenseDetector(radiuses=[3, 6, 12, 16], overlap=0.3)),
+                 ("smoothing", BilateralFilter()),
+                 ("dense_detector", DenseDetector(radiuses=[2, 4, 8, 16], overlap=0.3)),
+
                  # ("sift_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='sift')),
-                 ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-surf')),
+                 ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
                  ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
 
                  # ("l2_normalization", Normalizer(norm='l2', copy=False)),
                  ("scaler", StandardScaler(copy=False)),
-                 ("dim_reduction", PCA(0.75, whiten=True)),
+                 # ("dim_reduction", PCA(0.85, whiten=True)),
                  ("classification",
-                  svm.SVC(C=200, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
+                  svm.SVC(C=300, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
 
         pipeline = testing()
 
@@ -190,7 +192,7 @@ def execute_pipeline():
         predict = pipeline.predict(test_image_contexts)
         logger.info('Computing confusion matrix')
         plot_confusion_matrix(test_image_contexts, predict,
-                              image_dataset.CIFAR_10_LABELS)
+                              image_dataset.CIFAR_10_LABELS, suffix='dense_colorsift')
 
     def _grid_search():
         pipeline = Pipeline(
@@ -200,17 +202,17 @@ def execute_pipeline():
              ("surf_descriptor", FeatureDescriptor(ProgressBar(), descriptor='color-surf')),
              ("code_book", CodeBook(vocabulary_size_factor=LABEL_COUNT * 3)),
              ("normalization", StandardScaler(copy=False)),
-             ("dim_reduction", PCA(n_components=0.75, whiten=True)),
+             #       ("dim_reduction", PCA(n_components=0.75, whiten=True)),
              ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, C=300, gamma=0.00001))])
 
         param_grid = {
             # 'dense_detector__overlap': [0, 0.3],
-            'dense_detector__radiuses': [[2, 4, 8, 16], [3, 6, 12, 16]],
-            'code_book__vocabulary_size_factor': [LABEL_COUNT * 3, LABEL_COUNT * 4],
-            'dim_reduction': [None, PCA(0.75), PCA(0.87)],
+            'dense_detector__radiuses': [[2, 4, 8, 16]],
+            'code_book__vocabulary_size_factor': [LABEL_COUNT * 3],
+            'dim_reduction': [PCA(0.85, whiten=True)],
             # 'dim_reduction__n_components': [0.75, 0.85, 0.9],
-            'classification__C': [300, 500],
-            'classification__gamma': [0.00001, 0.000001]
+            # 'classification__C': [300, 500],
+            'classification__gamma': [0.00001, 0.000005]
         }
 
         gridSearch = GridSearchCV(pipeline, param_grid, n_jobs=1, verbose=10, refit=False, error_score=0, cv=2)
@@ -259,16 +261,16 @@ def execute_pipeline():
         for score in scores:
             logger.info(score)
 
-    _grid_search()
+    # _grid_search()
 
-    # _pipeline()
+    _pipeline()
     # _my_grid_search()
 
 
 def plot_confusion_matrix(test_image_contexts, predictions, classes,
                           normalize=False,
                           title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+                          cmap=plt.cm.Blues, suffix=None):
     # compute confusion matrix
     truth = [test_img.label for test_img in test_image_contexts]
     confusion_matrix = sklearn.metrics.confusion_matrix(truth, predictions, range(len(classes)))
@@ -311,4 +313,4 @@ def plot_confusion_matrix(test_image_contexts, predictions, classes,
     ax.set_ylabel('True label')
     ax.set_xlabel('Predicted label')
 
-    canvas.print_figure('../../results/confusion_matrix.png')
+    canvas.print_figure('../../results/cm_' + suffix + '_.png')
