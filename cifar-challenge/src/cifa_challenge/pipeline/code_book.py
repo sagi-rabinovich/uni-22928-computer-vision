@@ -64,7 +64,7 @@ class CodeBook(BaseEstimator, TransformerMixin):
 
     def transform(self, images_with_descriptors):
         descriptors = images_with_descriptors[1]
-        self.progressBar.suffix = 'Transforming descriptors'
+        self.progressBar.suffix = 'Coding descriptors'
         code_vectors = []
 
         for img_descriptors in self.progressBar.track(descriptors):

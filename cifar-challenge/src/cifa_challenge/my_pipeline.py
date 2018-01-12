@@ -29,10 +29,10 @@ def execute_pipeline():
     image_dataset = ImageDataset()
 
     LABEL_COUNT = len(image_dataset.CIFAR_10_LABELS)
-    DATA_BATCH_1 = 'data_batch_1'
-    samples = 5000
+    DATA_BATCH = 'data_batch_1'
+    samples = -1
 
-    image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1, samples=samples)
+    image_contexts = image_dataset.load_training_data(batch=DATA_BATCH, samples=samples)
     test_image_contexts = image_dataset.load_test_data(samples=samples)
     logger = MyLogger.getLogger('cifar-challenge.Pipeline')
 
@@ -166,22 +166,40 @@ def execute_pipeline():
         #                      ("dim_reduction", PCA(0.75)),
         #                      ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, verbose=True))])
         def testing():
-            return Pipeline(
-                [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+            kaze_pipeline = Pipeline(
+                [("grayscale_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
                  ("smoothing", BilateralFilter()),
-                 ("dense_detector", DenseDetector(radiuses=[2, 4, 8, 16], overlap=0.3)),
-
-                 # ("sift_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='sift')),
+                 ("kaze_detector", FeatureDetector(detector='kaze')),
                  ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
-                 ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
-
+                 ("code_book", CodeBook(codeBookBar, vocabulary_size_factor=LABEL_COUNT * 3))])
+            sift_pipeline = Pipeline(
+                [("grayscale_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+                 ("smoothing", BilateralFilter()),
+                 ("sift_detector", FeatureDetector(detector='sift')),
+                 ("sift_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
+                 ("code_book", CodeBook(codeBookBar, vocabulary_size_factor=LABEL_COUNT * 3))])
+            return Pipeline(
+                [("feature_extraction",
+                  FeatureUnion([("kaze_pipeline", kaze_pipeline), ("sift_pipeline", sift_pipeline)])),
                  # ("l2_normalization", Normalizer(norm='l2', copy=False)),
                  ("scaler", StandardScaler(copy=False)),
                  # ("dim_reduction", PCA(0.85, whiten=True)),
                  ("classification",
                   svm.SVC(C=300, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
 
-        pipeline = testing()
+        def best_pipeline():
+            return Pipeline(  # this give 0.492
+                [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+                 ("smoothing", BilateralFilter()),
+                 ("dense_detector", DenseDetector(radiuses=[2, 4, 8, 16], overlap=0.3)),
+                 ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
+                 ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
+                 ("scaler", StandardScaler(copy=False)),
+                 #    ("dim_reduction", PCA(whiten=True)),
+                 ("classification",
+                  svm.SVC(C=300, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
+
+        pipeline = best_pipeline()
 
         pipeline = pipeline.fit(image_contexts, extractLabels(image_contexts, 1))
         logger.info('Computing score')
@@ -314,3 +332,18 @@ def plot_confusion_matrix(test_image_contexts, predictions, classes,
     ax.set_xlabel('Predicted label')
 
     canvas.print_figure('../../results/cm_' + suffix + '_.png')
+
+# return Pipeline( # this give 0.492
+#     [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution')),
+#      ("smoothing", BilateralFilter()),
+#      ("dense_detector", DenseDetector(radiuses=[2, 4, 8, 16], overlap=0.3)),
+#
+#      # ("sift_detector", FeatureDetector(progressBar=keypoint_detector_bar, detector='sift')),
+#      ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
+#      ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
+#
+#      # ("l2_normalization", Normalizer(norm='l2', copy=False)),
+#      ("scaler", StandardScaler(copy=False)),
+#      # ("dim_reduction", PCA(0.85, whiten=True)),
+#      ("classification",
+#       svm.SVC(C=300, gamma=0.00001, decision_function_shape='ovr', cache_size=2000, verbose=True))])
