@@ -74,8 +74,10 @@ class ImageDataset:
             image_ctx = chosen
         return image_ctx
 
-    def load_training_data(self, samples=-1, batch=''):
-        batches = self.TRAINING_BATCHES if batch == '' else {batch: self.TRAINING_BATCHES[batch]}
+    def load_training_data(self, samples=-1, batches=None):
+
+        batches = self.TRAINING_BATCHES if batches is None else dict(
+            (k, self.TRAINING_BATCHES[k]) for k in batches if k in self.TRAINING_BATCHES)
         return self.load_data(batches, samples)
 
     def load_test_data(self, samples=-1):

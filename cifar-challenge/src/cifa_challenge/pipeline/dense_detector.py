@@ -22,8 +22,9 @@ class DenseDetector(BaseEstimator, TransformerMixin):
         self.radiuses = radiuses
         self.overlap = overlap
         self._cachedGrids = {}
-        self.__fitted_images = None
-        self.__detected_kps = None
+
+    def prepare_to_pickle(self):
+        self._cachedGrids = {}
 
     def fit(self, images, y=None):
         return self

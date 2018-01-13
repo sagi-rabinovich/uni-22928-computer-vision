@@ -46,7 +46,7 @@ image_dataset = ImageDataset()
 #     image_contexts.append(imageContext)
 DATA_BATCH_1 = 'data_batch_1'
 
-image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1)[0:1000]
+image_contexts = image_dataset.load_training_data(batches=DATA_BATCH_1)[0:1000]
 test_image_contexts = image_dataset.load_test_data()
 progress_bar.prefix = 'Extracting features for training images'
 feature_extractor.extractAndCompute(image_contexts)

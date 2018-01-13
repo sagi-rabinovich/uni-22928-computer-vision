@@ -8,6 +8,7 @@ from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
 from sklearn import svm
 from sklearn.decomposition import PCA
+from sklearn.externals import joblib
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, Normalizer
@@ -25,14 +26,34 @@ from pipeline.nop_transformer import NopTransformer
 from progress_bar import ProgressBar
 
 
+def load_pipeline(pkl):
+    pipeline = joblib.load(pkl)
+    return pipeline
+
+
+def normalize_image_descriptors(X, y=None):
+    descriptors = []
+    normalizer = Normalizer(copy=False)
+    for desc in X[1]:
+        descriptors.append(normalizer.transform(desc))
+    return X[0], descriptors
+
+
+def dump_pipeline(pipeline, filename):
+    dense_detector = pipeline.named_steps.get('dense_detector')
+    if dense_detector:
+        pipeline.named_steps.dense_detector.prepare_to_pickle()
+    joblib.dump(pipeline, filename)
+
+
 def execute_pipeline():
     image_dataset = ImageDataset()
 
     LABEL_COUNT = len(image_dataset.CIFAR_10_LABELS)
-    DATA_BATCH = 'data_batch_1'
+    DATA_BATCH = ['data_batch_1']
     samples = -1
 
-    image_contexts = image_dataset.load_training_data(batch=DATA_BATCH, samples=samples)
+    image_contexts = image_dataset.load_training_data(batches=DATA_BATCH, samples=samples)
     test_image_contexts = image_dataset.load_test_data(samples=samples)
     logger = MyLogger.getLogger('cifar-challenge.Pipeline')
 
@@ -42,6 +63,18 @@ def execute_pipeline():
             for x in imgs:
                 labels.append(x.label)
         return labels
+
+    def _test_pickle():
+        pipe = load_pipeline('best_score.pkl')
+        scoreAndPrint(pipe)
+        # steps = list(pipe.steps)
+        # i=0
+        # while len(pipe.steps) > 0:
+        #     step = pipe.steps.pop(0)
+        #     dump_pipeline(pipe, 'pipe_short_' + str(i) + '_' + step[0])
+        #     i+=1
+
+        print('here')
 
     def _pipeline():
         keypoint_detector_bar = ProgressBar()
@@ -193,6 +226,7 @@ def execute_pipeline():
                  ("smoothing", BilateralFilter()),
                  ("dense_detector", DenseDetector(radiuses=[2, 4, 8, 16], overlap=0.3)),
                  ("surf_descriptor", FeatureDescriptor(descriptor_compute_bar, 'color-sift')),
+                 ("descriptor_nomalizer", FunctionTransformer(normalize_image_descriptors, validate=False)),
                  ("code_book", CodeBook(codeBookBar, LABEL_COUNT * 3)),
                  ("scaler", StandardScaler(copy=False)),
                  #    ("dim_reduction", PCA(whiten=True)),
@@ -202,23 +236,28 @@ def execute_pipeline():
         pipeline = best_pipeline()
 
         pipeline = pipeline.fit(image_contexts, extractLabels(image_contexts, 1))
+        scoreAndPrint(pipeline)
+
+        dump_pipeline(pipeline, 'best_score.pkl')
+        #
+        # logger.info('Making predictions')
+        # predict = pipeline.predict(test_image_contexts)
+        # logger.info('Computing confusion matrix')
+        # plot_confusion_matrix(test_image_contexts, predict,
+        #                       image_dataset.CIFAR_10_LABELS, suffix='normalize_descriptors')
+
+    def scoreAndPrint(pipeline):
         logger.info('Computing score')
         score = pipeline.score(test_image_contexts, extractLabels(test_image_contexts, 1))
         print('Score: ' + str(score))
-
-        logger.info('Making predictions')
-        predict = pipeline.predict(test_image_contexts)
-        logger.info('Computing confusion matrix')
-        plot_confusion_matrix(test_image_contexts, predict,
-                              image_dataset.CIFAR_10_LABELS, suffix='dense_colorsift')
 
     def _grid_search():
         pipeline = Pipeline(
             [("color_transform", ColorSpaceTransformer(transformation='transformed_color_distribution'),),
              #   ("smoothing", BilateralFilter()),
-             ("dense_detector", DenseDetector(radiuses=[3, 6, 12, 16], overlap=0.3)),
-             ("surf_descriptor", FeatureDescriptor(ProgressBar(), descriptor='color-surf')),
-             ("code_book", CodeBook(vocabulary_size_factor=LABEL_COUNT * 3)),
+             ("dense_detector", DenseDetector(radiuses=[2, 4, 8, 16], overlap=0.3)),
+             ("surf_descriptor", FeatureDescriptor(ProgressBar(), descriptor='color-sift')),
+             ("code_book", CodeBook(vocabulary_size_factor=LABEL_COUNT * 3, sparse_transform_alpha=0)),
              ("normalization", StandardScaler(copy=False)),
              #       ("dim_reduction", PCA(n_components=0.75, whiten=True)),
              ("classification", svm.SVC(decision_function_shape='ovr', cache_size=2000, C=300, gamma=0.00001))])
@@ -227,13 +266,14 @@ def execute_pipeline():
             # 'dense_detector__overlap': [0, 0.3],
             'dense_detector__radiuses': [[2, 4, 8, 16]],
             'code_book__vocabulary_size_factor': [LABEL_COUNT * 3],
-            'dim_reduction': [PCA(0.85, whiten=True)],
+            'code_book__sparse_transform_alpha': [0, 0.1, 0.3, 0.5],
+            # 'dim_reduction': [PCA(0.85, whiten=True)],
             # 'dim_reduction__n_components': [0.75, 0.85, 0.9],
             # 'classification__C': [300, 500],
-            'classification__gamma': [0.00001, 0.000005]
+            # 'classification__gamma': [0.00001, 0.000005]
         }
 
-        gridSearch = GridSearchCV(pipeline, param_grid, n_jobs=1, verbose=10, refit=False, error_score=0, cv=2)
+        gridSearch = GridSearchCV(pipeline, param_grid, n_jobs=4, verbose=10, refit=False, error_score=0, cv=2)
         gridSearch.fit(image_contexts, extractLabels(image_contexts, 1))
         print('\n\n===================\nGrid search results:')
         print(gridSearch.best_params_)
@@ -280,8 +320,8 @@ def execute_pipeline():
             logger.info(score)
 
     # _grid_search()
-
-    _pipeline()
+    _test_pickle()
+    # _pipeline()
     # _my_grid_search()
 
 

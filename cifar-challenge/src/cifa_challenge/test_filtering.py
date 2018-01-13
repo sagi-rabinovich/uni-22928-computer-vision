@@ -7,7 +7,7 @@ image_dataset = ImageDataset()
 
 LABEL_COUNT = len(image_dataset.CIFAR_10_LABELS)
 DATA_BATCH_1 = 'data_batch_1'
-image_contexts = image_dataset.load_training_data(batch=DATA_BATCH_1)[:20]
+image_contexts = image_dataset.load_training_data(batches=DATA_BATCH_1)[:20]
 
 image_grid = []
 sigma = [50, 100, 150, 200]

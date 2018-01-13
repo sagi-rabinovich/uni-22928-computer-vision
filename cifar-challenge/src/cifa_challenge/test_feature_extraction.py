@@ -12,7 +12,7 @@ progressBar = ProgressBar()
 imageDataset = ImageDataset()
 
 nimages = 30
-imgs = imageDataset.load_training_data(batch='data_batch_1')[:nimages]
+imgs = imageDataset.load_training_data(batches='data_batch_1')[:nimages]
 detectors = [
     ('Sift', cv2.xfeatures2d.SIFT_create()),
     ('Surf', cv2.xfeatures2d.SURF_create(hessianThreshold=300)),

@@ -26,11 +26,16 @@ class ProgressBar:
         self._update_after_n_intervals = 1
         self._logger = MyLogger.getLogger('cifar-challenge.ProgressBar')
 
-    def track(self, items, suffix=''):
-        total = len(items)
+    def track(self, items, iter=None, total=None, suffix=''):
+        if items is None:
+            items = iter
+        else:
+            total = len(items)
+
         if suffix != '':
             self.suffix = suffix
         self.start(total)
+
         for item in items:
             yield item
             self.increment()
@@ -47,9 +52,6 @@ class ProgressBar:
 
     # Print iterations progress
     def update(self, iteration, total):
-        if MyLogger.PICKLE_COMPATABILITY:
-            return
-
         """
         Call in a loop to create terminal progress bar
         @params:

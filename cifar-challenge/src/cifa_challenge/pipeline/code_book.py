@@ -40,10 +40,12 @@ class CodeBook(BaseEstimator, TransformerMixin):
         flat_descriptors = [len(img_descriptors) for img_descriptors in descriptors]
         average_descriptor_count_per_img = np.mean(flat_descriptors)
         total_descriptors = np.sum(flat_descriptors)
+        self.__logger.info('Total descriptors:' + str(total_descriptors))
+
         self.k_ = int(math.ceil(self.vocabulary_size_factor * average_descriptor_count_per_img))
         if self.k_ > total_descriptors:
             self.k_ = total_descriptors
-        approximate_batch_size = 10000
+        approximate_batch_size = max(10000, self.k_)
         image_count = len(descriptors)
         split = max(int(image_count * average_descriptor_count_per_img / approximate_batch_size), 1)
         self.__logger.info('Building code book [k=' + str(self.k_) + ', split=' + str(split) + ']')
