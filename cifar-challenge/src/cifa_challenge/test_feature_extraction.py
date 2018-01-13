@@ -19,9 +19,7 @@ detectors = [
     ('Star', cv2.xfeatures2d.StarDetector_create()),
     ('Brisk', cv2.BRISK_create()),
     ('MSER', cv2.MSER_create()),
-    # ('ORB', cv2.ORB_create()),
     ('Kaze', cv2.KAZE_create()),
-    ('Kaze_o8', cv2.KAZE_create(nOctaves=8)),
     # ('AKaze', cv2.AKAZE_create())
 ]
 

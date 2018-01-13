@@ -17,7 +17,7 @@ from cifa_challenge.my_utils import flatmap
 from cifa_challenge.progress_bar import ProgressBar
 
 
-class CodeBook(BaseEstimator, TransformerMixin):
+class SoftCodeBook(BaseEstimator, TransformerMixin):
     def __init__(self, progressBar=ProgressBar(), vocabulary_size_factor=1.6, sparse_transform_alpha=0.1):
         self.__logger = MyLogger.getLogger('cifar-challenge.CodeBook')
         """
@@ -28,6 +28,7 @@ class CodeBook(BaseEstimator, TransformerMixin):
            not necessarily the globally minimal distortion.
         """
         self.kmeans_ = None
+        self.coder_ = None
         self.k_ = -1
         self.sparse_transform_alpha = sparse_transform_alpha
         self.progressBar = progressBar
@@ -61,7 +62,7 @@ class CodeBook(BaseEstimator, TransformerMixin):
         dictionary = self.kmeans_.cluster_centers_
 
         self.coder_ = SparseCoder(dictionary, transform_algorithm='threshold',
-                                  transform_alpha=self.sparse_transform_alpha).fit(features)
+                                  transform_alpha=self.sparse_transform_alpha)
         return self
 
     def transform(self, images_with_descriptors):

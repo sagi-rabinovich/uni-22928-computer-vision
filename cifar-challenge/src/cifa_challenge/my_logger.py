@@ -3,11 +3,11 @@ import logging
 
 
 class MyLogger:
-    PICKLE_COMPATABILITY = True
+    PICKLE_COMPATIBILITY = True
 
     @staticmethod
     def getLogger(logger_name):
-        if MyLogger.PICKLE_COMPATABILITY:
+        if MyLogger.PICKLE_COMPATIBILITY:
             return ConsoleLogger(logger_name)
         return logging.getLogger(logger_name)
 

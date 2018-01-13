@@ -10,13 +10,19 @@ DATA_BATCH_1 = 'data_batch_1'
 image_contexts = image_dataset.load_training_data(batches=DATA_BATCH_1)[:20]
 
 image_grid = []
-sigma = [50, 100, 150, 200]
-d = 4
+sigmas = [20, 50, 100, 150]
+ds = [4]
 for img in image_contexts:
     image_row = [img.original]
-    for s in sigma:
-        filtered = cv2.bilateralFilter(img.original, d, s, s)
-        image_row.append(filtered)
+    for s in sigmas:
+        for d in ds:
+            filtered = cv2.bilateralFilter(img.original, d, s, s)
+            image_row.append(filtered)
     image_grid.append(image_row)
+header = ['original']
 
-plot_image_grid(image_grid, (len(image_contexts), len(sigma) + 1), 'bluring.png')
+for s in sigmas:
+    for d in ds:
+        header.append('s=' + str(s) + ', d=' + str(d))
+
+plot_image_grid(image_grid, (len(image_contexts), len(sigmas) * len(ds) + 1), 'bluring.png', header=None)

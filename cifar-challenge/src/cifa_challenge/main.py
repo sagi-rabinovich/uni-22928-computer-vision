@@ -2,7 +2,7 @@ import logging
 
 from my_pipeline import execute_pipeline
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     # Logging
     # create logger with 'spam_application'
     logger = logging.getLogger('cifar-challenge')

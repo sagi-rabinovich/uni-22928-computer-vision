@@ -11,7 +11,6 @@ class Classifier:
         self._kdtree = None
         self._logger = MyLogger.getLogger('cifar-challenge.Classifier')
 
-
     def learn(self, image_contexts):
         self._imageContexts = image_contexts
         code_vectors = [imageContext.code_vector for imageContext in image_contexts]
@@ -21,7 +20,6 @@ class Classifier:
         # self._kdtree = KDTree(code_vectors, leaf_size=5)
 
         return self
-
 
     def predict(self, test_image_contexts):
         return self._svm.predict([imageContext.code_vector for imageContext in test_image_contexts])
@@ -34,5 +32,3 @@ class Classifier:
     # def knn(self, image_context, k):
     #     nn = self._kdtree.query([image_context.code_vector], k=k, return_distance=False)[0]
     #     return self._imageContexts[nn]
-
-
