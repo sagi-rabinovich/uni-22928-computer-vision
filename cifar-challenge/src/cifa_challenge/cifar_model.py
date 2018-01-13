@@ -29,12 +29,12 @@ class CifarModel():
     The method train
     """
 
-    def __init__(self, dataset_dir=None):
+    def __init__(self, dataset_dir=None, samples=10000):
         self.image_dataset_ = ImageDataset(dataset_dir)
 
         self.LABEL_COUNT = len(self.image_dataset_.CIFAR_10_LABELS)
         DATA_BATCH = ['data_batch_1']  # the CIFAR-10 batches to use, or None to use them all
-        samples = -1  # number of samples to use or -1 for all the samples in the batch
+        DATA_BATCH = None  # the CIFAR-10 batches to use, or None to use them all
 
         self.image_contexts_ = self.image_dataset_.load_training_data(batches=DATA_BATCH, samples=samples)
         self.test_image_contexts_ = self.image_dataset_.load_test_data(samples=samples)

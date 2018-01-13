@@ -1,3 +1,4 @@
+import argparse
 import logging
 
 from cifa_challenge.cifar_model import CifarModel
@@ -19,7 +20,12 @@ if __name__ == "__main__":
 
     logger.info('Starting main')
 
-    cifar_model = CifarModel()
+    parser = argparse.ArgumentParser(description='CIFAR-10 Challenge')
+    parser.add_argument('--dataset-dir', help='root directory for the CIFAR-10 dataset', required=True)
+    parser.add_argument('--samples', help='Number of samples to take from the dataset', type=int, default=10000)
+    args = parser.parse_args()
+
+    cifar_model = CifarModel(dataset_dir=args.dataset_dir, samples=args.samples)
     cifar_model.train_best_pipeline()
 
     logger.info('Done...')
