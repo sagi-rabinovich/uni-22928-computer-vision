@@ -61,4 +61,4 @@ for im_i in range(len(imgs)):
         except:
             print "Unexpected error with detector: ", detector_name, sys.exc_info()[0]
 
-canvas.print_figure('../../results/feature_extraction_compare.png')
+canvas.print_figure('../results/feature_extraction_compare.png')

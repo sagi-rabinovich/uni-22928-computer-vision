@@ -113,4 +113,4 @@ class HardCodeBook(BaseEstimator, TransformerMixin):
                 ax.set_axis_off()
                 ax.imshow(kpImage, interpolation='nearest')
 
-        canvas.print_figure('../../results/example_codes.png')
+        canvas.print_figure('../results/example_codes.png')

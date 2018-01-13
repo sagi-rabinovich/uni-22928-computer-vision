@@ -23,4 +23,4 @@ def plot_image_grid(img_grid, grid_shape, file_name, normalize=False, header=Non
             if y == 0 and header is not None:
                 ax.set_title(header[x])
 
-    canvas.print_figure(os.path.join('../../results/', file_name))
+    canvas.print_figure(os.path.join('../results/', file_name))

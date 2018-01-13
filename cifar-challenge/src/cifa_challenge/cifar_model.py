@@ -33,8 +33,8 @@ class CifarModel():
         self.image_dataset_ = ImageDataset(dataset_dir)
 
         self.LABEL_COUNT = len(self.image_dataset_.CIFAR_10_LABELS)
-        DATA_BATCH = ['data_batch_1']
-        samples = -1
+        DATA_BATCH = ['data_batch_1']  # the CIFAR-10 batches to use, or None to use them all
+        samples = -1  # number of samples to use or -1 for all the samples in the batch
 
         self.image_contexts_ = self.image_dataset_.load_training_data(batches=DATA_BATCH, samples=samples)
         self.test_image_contexts_ = self.image_dataset_.load_test_data(samples=samples)
@@ -176,7 +176,7 @@ class CifarModel():
         ax.set_ylabel('True label')
         ax.set_xlabel('Predicted label')
 
-        canvas.print_figure('../../results/cm_' + filename_suffix + '_.png')
+        canvas.print_figure('../results/cm_' + filename_suffix + '_.png')
 
     def _multiple_pipelines(self):
         '''

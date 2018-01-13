@@ -7,7 +7,7 @@ if __name__ == "__main__":
     # create logger with 'spam_application'
     logger = logging.getLogger('cifar-challenge')
     logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('../../main.log')
+    fh = logging.FileHandler('main.log')
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)

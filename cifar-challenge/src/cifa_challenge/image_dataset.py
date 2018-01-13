@@ -7,12 +7,12 @@ from image_context import ImageContext
 
 
 class ImageDataset:
-    CIFAR_PICKLE_DEFAULT_DIR = '../../cifar-10-batches-py'
+    CIFAR_PICKLE_DEFAULT_DIR = '../cifar-10-batches-py'
 
     def __init__(self, dataset_dir=None):
         self.dataset_dir = dataset_dir if dataset_dir is not None else ImageDataset.CIFAR_PICKLE_DEFAULT_DIR
 
-    PRECOMUTED_DIR = '../../precomputed/'
+    PRECOMUTED_DIR = '../precomputed/'
     CIFAR_10_LABELS = ['airplane',
                        'automobile',
                        'bird',
