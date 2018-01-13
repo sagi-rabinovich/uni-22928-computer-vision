@@ -123,20 +123,19 @@ class CifarModel():
         # dump_pipeline(pipeline, 'best_score.pkl')
 
         self.logger_.info('Making predictions')
-        predict = pipeline.predict(self.test_image_contexts_)
+        predictions = pipeline.predict(self.test_image_contexts_)
         self.logger_.info('Computing confusion matrix')
-        self.plot_confusion_matrix(self.test_image_contexts_, predict,
-                                   self.image_dataset_.CIFAR_10_LABELS, filename_suffix='some_pipe_line')
+        self.plot_confusion_matrix(predictions, filename_suffix='some_pipe_line')
 
     def plot_confusion_matrix(self,
                               predictions,
-                              categories,
                               normalize=False,
                               title='Confusion matrix',
                               cmap=plt.cm.Blues,
                               filename_suffix=None):
         # compute confusion matrix
         truth = [test_img.label for test_img in self.test_image_contexts_]
+        categories = self.image_dataset_.CIFAR_10_LABELS
         confusion_matrix = sklearn.metrics.confusion_matrix(truth, predictions, range(len(categories)))
 
         """
