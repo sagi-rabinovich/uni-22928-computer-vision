@@ -1,6 +1,6 @@
 import logging
 
-from cifa_challenge.my_pipeline import CifarModel
+from cifa_challenge.cifar_model import CifarModel
 
 if __name__ == "__main__":
     # Logging
