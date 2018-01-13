@@ -1,6 +1,6 @@
 import logging
 
-from my_pipeline import execute_pipeline
+from cifa_challenge.my_pipeline import CifarModel
 
 if __name__ == "__main__":
     # Logging
@@ -19,6 +19,7 @@ if __name__ == "__main__":
 
     logger.info('Starting main')
 
-    execute_pipeline()
+    cifar_model = CifarModel()
+    cifar_model.train_best_pipeline()
 
     logger.info('Done...')

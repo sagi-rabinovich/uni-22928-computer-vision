@@ -7,10 +7,11 @@ from image_context import ImageContext
 
 
 class ImageDataset:
-    def __init__(self):
-        pass
+    CIFAR_PICKLE_DEFAULT_DIR = '../../cifar-10-batches-py'
 
-    CIFAR_PICKLE_DIR = '../../cifar-10-batches-py'
+    def __init__(self, dataset_dir=None):
+        self.dataset_dir = dataset_dir if dataset_dir is not None else ImageDataset.CIFAR_PICKLE_DEFAULT_DIR
+
     PRECOMUTED_DIR = '../../precomputed/'
     CIFAR_10_LABELS = ['airplane',
                        'automobile',
@@ -35,7 +36,7 @@ class ImageDataset:
         im.save(path)
 
     def __unpickle_image_dataset(self, file):
-        with open(os.path.join(self.CIFAR_PICKLE_DIR, file), 'rb') as fo:
+        with open(os.path.join(self.dataset_dir, file), 'rb') as fo:
             dict = cPickle.load(fo)
         data = dict.get('data')
         labels = dict['labels']
@@ -99,6 +100,3 @@ class ImageDataset:
     def unpickle_obj(self, file_name):
         with open(os.path.join(ImageDataset.PRECOMUTED_DIR, file_name), 'rb') as file:
             return cPickle.load(file)
-
-# data, labels = unpickle('data_batch_5')
-# cifar10ToImages(data, labels, 'data_batch_5')
